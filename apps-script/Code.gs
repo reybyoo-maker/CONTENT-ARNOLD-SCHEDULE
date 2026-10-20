@@ -253,9 +253,16 @@ function generatePostsBatchWithRetry_(slots, refs, maxAttempts) {
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
       const posts = generatePostsBatch_(slots, refs);
-      if (Array.isArray(posts) && posts.length === slots.length) return posts;
-      throw new Error('Expected ' + slots.length + ' posts, received ' +
-        (posts && posts.length !== undefined ? posts.length : 'no posts') + '.');
+      if (!Array.isArray(posts) || posts.length !== slots.length) {
+        throw new Error('Expected ' + slots.length + ' posts, received ' +
+          (posts && posts.length !== undefined ? posts.length : 'no posts') + '.');
+      }
+      const normalized = normalizeBatchPosts_(posts, slots);
+      const structureErrors = validateBatchStructure_(normalized, slots, refs);
+      if (structureErrors.length) {
+        throw new Error('Generated content structure is invalid: ' + structureErrors.slice(0, 8).join(' | '));
+      }
+      return normalized;
     } catch (e) {
       lastError = e;
       Logger.log('Gemini batch failed (' + slots.length + ' slot(s), attempt ' + attempt + '/' +
@@ -279,6 +286,76 @@ function generatePostsBatchWithRetry_(slots, refs, maxAttempts) {
     ') after ' + maxAttempts + ' attempts. Last error: ' +
     String(lastError && lastError.message || 'unknown Gemini response error') +
     '. No calendar rows were written. Open Apps Script → Executions for details.');
+}
+
+function normalizeBatchPosts_(posts, slots) {
+  const exampleMap = {};
+  EXAMPLES.forEach(function (example) { exampleMap[example.id] = example; });
+
+  return posts.map(function (rawPost, index) {
+    const slot = slots[index];
+    const post = rawPost && typeof rawPost === 'object' ? Object.assign({}, rawPost) : {};
+    const currentExample = exampleMap[String(post.example_id || '').trim()];
+    if (!exampleSupportsFormat_(currentExample, slot.format)) {
+      const matching = EXAMPLES.filter(function (example) { return exampleSupportsFormat_(example, slot.format); });
+      if (!matching.length) throw new Error('No format-matched public reference is configured for ' + slot.format + '.');
+      const seed = Number(String(slot.date).replace(/-/g, '')) + (Number(slot.postNumber) || index + 1) * 173;
+      const rng = seededRandom_(seed);
+      const replacement = matching[Math.floor(rng() * matching.length)];
+      Logger.log('Replacing mismatched example_id "' + String(post.example_id || '') +
+        '" with ' + replacement.id + ' for ' + slot.format + ' on ' + slot.date + '.');
+      post.example_id = replacement.id;
+      post.example_format_match = replacement.formatMatch;
+      post.example_adaptation = 'Use this format-matched external example for structure only. ' + replacement.lesson;
+    } else {
+      // Source metadata is authoritative; do not trust a format label hallucinated by Gemini.
+      post.example_format_match = currentExample.formatMatch;
+    }
+
+    // Carousel content is intentionally ignored for non-carousel formats.
+    // This repairs harmless extra fields rather than making an otherwise-good post fail.
+    if (slot.format !== 'Carousel') post.carousel_slides = [];
+    return post;
+  });
+}
+
+function validateBatchStructure_(posts, slots, refs) {
+  const errors = [];
+  const sourceMap = {};
+  refs.slice(0, 35).forEach(function (ref, index) { sourceMap['R' + (index + 1)] = ref; });
+
+  slots.forEach(function (slot, index) {
+    const post = posts[index] || {};
+    const label = slot.date + ' ' + slot.format;
+    const hook = String(post.hook || '').trim();
+    const words = countWords_(hook);
+    if (words < 4 || words > 9) errors.push(label + ': hook must be 4–9 words (found ' + words + ').');
+    if (!String(post.topic || '').trim()) errors.push(label + ': topic is empty.');
+    if (!String(post.case_or_field_scenario || '').trim()) errors.push(label + ': workplace scenario is empty.');
+
+    const refIds = Array.isArray(post.reference_ids) ? post.reference_ids : [];
+    if (!refIds.some(function (id) { return Boolean(sourceMap[String(id || '').trim()]); })) {
+      errors.push(label + ': no valid research reference ID.');
+    }
+
+    if (slot.format === 'Carousel') {
+      const slides = Array.isArray(post.carousel_slides) ? post.carousel_slides : [];
+      if (slides.length !== 7) {
+        errors.push(label + ': Carousel requires exactly 7 slides; received ' + slides.length + '.');
+      } else {
+        if (String(slides[0].role || '').toLowerCase() !== 'cover') errors.push(label + ': slide 1 role must be cover.');
+        if (String(slides[6].role || '').toLowerCase() !== 'cta') errors.push(label + ': slide 7 role must be CTA.');
+        slides.forEach(function (slide, slideIndex) {
+          if (!String(slide.slide_text || '').trim()) errors.push(label + ': slide ' + (slideIndex + 1) + ' has no slide text.');
+          if (!String(slide.visual_direction || '').trim()) errors.push(label + ': slide ' + (slideIndex + 1) + ' has no visual direction.');
+        });
+        if (String(slides[0].slide_text || '').trim() !== hook) errors.push(label + ': slide 1 must equal the hook.');
+      }
+    } else if (Array.isArray(post.carousel_slides) && post.carousel_slides.length) {
+      errors.push(label + ': non-Carousel output must not contain carousel slides.');
+    }
+  });
+  return errors;
 }
 
 function generatePostsBatch_(slots, refs) {
@@ -305,7 +382,7 @@ function generatePostsBatch_(slots, refs) {
     'Caption: Bahasa Indonesia, about 80–150 words, useful professional tone, clear insight, practical step and natural CTA. Never invent first-person anecdotes or client experiences for the account owner.',
     'Pillars should fit: Leadership in Practice, Manager Toolkit, Team Performance, Delegation & Accountability, Communication & Emotional Intelligence, Workplace Case, Practitioner Insight, or Professional Productivity. Do not use AI as a pillar unless the post genuinely requires it.',
     'Return valid JSON only: {"posts":[...]} with exactly one post per supplied slot, in the same order. Keep the response complete; never omit a slot or shorten required carousel slide copy.',
-    'Required post fields: topic, pillar, hook, production_plan, carousel_slides, caption, cta, hashtags (array of 3–5), reference_ids (array of 1–2 valid R IDs), example_id, example_format_match, example_adaptation, original_angle, case_type, case_or_field_scenario, case_source_id (R ID or AB ID for documented cases, otherwise empty string), fact_check_notes.',
+    'Required post fields: topic, pillar, hook, production_plan, carousel_slides, caption, cta, hashtags (array of 3–5), reference_ids (array of 1–2 valid R IDs), example_id, example_format_match, example_adaptation, original_angle, case_type, case_or_field_scenario, case_source_id (R ID for documented cases, otherwise empty string), fact_check_notes.',
     'The research reference should support factual claims. Creator examples are inspiration for content format only and must never be presented as evidence of a client result or as a case study unless the source itself documents the case.',
     'Every schedule slot includes allowed_creator_examples filtered to the same format. Select example_id only from that list, and set example_format_match to the selected example’s exact format_match metadata.',
     'The full seven-day calendar has exactly one Reels slot. This request contains only a subset of that calendar: do not change or reassign the supplied format, and do not assume that this subset must contain a Reels slot.',
@@ -481,7 +558,7 @@ function validateDraftPosts_(posts, slots, sourceMap, exampleMap) {
     }
     const caseType = String(post.case_type || '').trim();
     const caseSourceId = String(post.case_source_id || '').trim();
-    const caseSource = sourceMap[caseSourceId] || exampleMap[caseSourceId];
+    const caseSource = sourceMap[caseSourceId] || null;
     if (caseType !== 'documented_case' && caseType !== 'illustrative_scenario') {
       errors.push(label + ': case_type must be documented_case or illustrative_scenario.');
     }
