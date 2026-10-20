@@ -24,7 +24,7 @@ Ini jadwal awal untuk diuji, bukan klaim jam terbaik. Evaluasi Instagram Insight
 Buat Google Spreadsheet misalnya **Arnold Bolang — Content Calendar**. Salin ID dari URL:
 https://docs.google.com/spreadsheets/d/ID_SPREADSHEET/edit
 
-Workflow membuat dua tab otomatis: **Content Calendar** dan **Reference Library**.
+Workflow membuat tiga tab otomatis: **Content Calendar**, **Reference Library**, dan **Creator Examples**.
 
 ### 2. Aktifkan Google Sheets API
 Di Google Cloud Console, buat/pilih project, aktifkan Google Sheets API, buat Service Account, lalu buat JSON key. Buka file JSON dan ambil nilai client_email. Bagikan spreadsheet ke alamat client_email sebagai **Editor**. Jangan commit atau mempublikasikan JSON key.
@@ -55,7 +55,7 @@ Workflow terjadwal setiap Rabu pukul **07.10 WIB** (00:10 UTC) dan membuat kalen
 ## Alur research
 Workflow menggunakan Google News RSS untuk mencari materi dari penerbit profesional, termasuk Harvard Business Review, Gallup, MIT Sloan Management Review, Center for Creative Leadership, SHRM, McKinsey, Atlassian, dan sumber relevan lain. Artikel ditemukan lebih dulu; Gemini hanya boleh menggunakan ID referensi yang diberikan. Jika sumber terlalu sedikit atau API gagal, workflow berhenti dengan error daripada membuat URL atau data palsu.
 
-Kalender berisi tanggal, hari, jam WIB, jumlah per hari, format, pilar, topik, hook cover, outline/production plan, caption, CTA, hashtag, referensi 1 dan 2 beserta URL/ringkasan, original angle, catatan fact-check, status, dan waktu pembuatan. Setiap post berstatus **DRAFT — REVIEW BEFORE POSTING**; review klaim dan caption sebelum menerbitkan.
+Kalender berisi tanggal, hari, jam WIB, jumlah per hari, format, pilar, topik, hook cover, outline/production plan, caption, CTA, hashtag, referensi riset 1 dan 2 beserta URL/ringkasan, satu contoh konten publik dari pihak lain beserta URL dan cara mengadaptasi formatnya, original angle, catatan fact-check, status, dan waktu pembuatan. Setiap post berstatus **DRAFT — REVIEW BEFORE POSTING**; review klaim dan caption sebelum menerbitkan.
 
 ## Troubleshooting
 - **Permission denied:** bagikan Google Sheet ke client_email sebagai Editor.
