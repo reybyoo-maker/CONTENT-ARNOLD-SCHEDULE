@@ -27,39 +27,23 @@ jobs:
             Utilities: { formatDate: function (date) { return date.toISOString().slice(0, 10); } }
           };
           vm.createContext(sandbox);
-          const test = String.raw\`
-            const week = buildSchedule_('2026-10-21');
-            const reels = week.filter(slot => slot.format === 'Reels').length;
-            if (reels !== 1) throw new Error('Expected one Reels slot, got ' + reels);
-            const counts = {};
-            week.forEach(slot => counts[slot.format] = (counts[slot.format] || 0) + 1);
-            ['Reels', 'Carousel', 'Feed (single image)'].forEach(format => {
-              if (!week.some(slot => slot.format === format)) {
-                // Not every calendar needs every format every week; test format helpers separately below.
-                return;
-              }
-            });
-            if (!exampleSupportsFormat_(EXAMPLES.find(e => e.formatMatch === 'Reels / Video'), 'Reels')) {
-              throw new Error('Video reference format helper failed');
-            }
-            if (!exampleSupportsFormat_(EXAMPLES.find(e => e.formatMatch === 'Carousel'), 'Carousel')) {
-              throw new Error('Carousel reference format helper failed');
-            }
-            if (!exampleSupportsFormat_(EXAMPLES.find(e => e.formatMatch === 'Feed (single image)'), 'Feed (single image)')) {
-              throw new Error('Feed reference format helper failed');
-            }
-            const baseSlots = week.slice(0, 12);
-            let attempts = 0;
-            generatePostsBatch_ = function(batch) {
-              attempts++;
-              if (batch.length > 1 && attempts === 1) return batch.slice(0, batch.length - 1).map(slot => ({date:slot.date}));
-              return batch.map(slot => ({date:slot.date, format:slot.format}));
-            };
-            const generated = generatePosts_(baseSlots, []);
-            if (generated.length !== baseSlots.length) throw new Error('Expected '+baseSlots.length+' posts, got '+generated.length);
-            if (attempts < 5) throw new Error('Expected retry and chunked generation attempts, got '+attempts);
-            console.log(JSON.stringify({status:'PASS', weekSlotCount:week.length, weeklyReels:reels, testedSlots:generated.length, batchCalls:attempts, scheduleFormats:counts}));
-          \`;
-          vm.runInContext(src + '\\n' + test, sandbox);
+          const testLines = [
+            "const week = buildSchedule_('2026-10-21');",
+            "const reels = week.filter(slot => slot.format === 'Reels').length;",
+            "if (reels !== 1) throw new Error('Expected one Reels slot, got ' + reels);",
+            "const counts = {};",
+            "week.forEach(slot => counts[slot.format] = (counts[slot.format] || 0) + 1);",
+            "if (!exampleSupportsFormat_(EXAMPLES.find(e => e.formatMatch === 'Reels / Video'), 'Reels')) throw new Error('Video reference format helper failed');",
+            "if (!exampleSupportsFormat_(EXAMPLES.find(e => e.formatMatch === 'Carousel'), 'Carousel')) throw new Error('Carousel reference format helper failed');",
+            "if (!exampleSupportsFormat_(EXAMPLES.find(e => e.formatMatch === 'Feed (single image)'), 'Feed (single image)')) throw new Error('Feed reference format helper failed');",
+            "const baseSlots = week.slice(0, 12);",
+            "let attempts = 0;",
+            "generatePostsBatch_ = function(batch) { attempts++; if (batch.length > 1 && attempts === 1) return batch.slice(0, batch.length - 1).map(slot => ({date:slot.date})); return batch.map(slot => ({date:slot.date, format:slot.format})); };",
+            "const generated = generatePosts_(baseSlots, []);",
+            "if (generated.length !== baseSlots.length) throw new Error('Expected '+baseSlots.length+' posts, got '+generated.length);",
+            "if (attempts < 5) throw new Error('Expected retry and chunked generation attempts, got '+attempts);",
+            "console.log(JSON.stringify({status:'PASS', weekSlotCount:week.length, weeklyReels:reels, testedSlots:generated.length, batchCalls:attempts, scheduleFormats:counts}));"
+          ];
+          vm.runInContext(src + '\n' + testLines.join('\n'), sandbox);
           JS
           node /tmp/test-batches.js
