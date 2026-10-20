@@ -276,7 +276,7 @@ def style_sheets(service, sid, tabs):
              "fields": "userEnteredFormat(backgroundColor,textFormat,verticalAlignment,wrapStrategy)"}},
             {"repeatCell": {"range": {"sheetId": sheet_id, "startRowIndex": 1},
              "cell": {"userEnteredFormat": {"verticalAlignment": "TOP", "wrapStrategy": "WRAP"}},
-             "fields": "userEnteredFormat(verticalAlignment,wrapStrategy"}},
+             "fields": "userEnteredFormat(verticalAlignment,wrapStrategy)"}},
             {"updateDimensionProperties": {"range": {"sheetId": sheet_id, "dimension": "ROWS", "startIndex": 0, "endIndex": 1},
              "properties": {"pixelSize": 44}, "fields": "pixelSize"}},
         ])
