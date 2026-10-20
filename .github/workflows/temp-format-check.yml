@@ -1,0 +1,52 @@
+name: Temporary format and syntax check
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps-script/Code.gs'
+      - '.github/workflows/temp-format-check.yml'
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Syntax check and test weekly schedule / format filters
+        shell: bash
+        run: |
+          cp apps-script/Code.gs /tmp/Code.js
+          node --check /tmp/Code.js
+          cat > /tmp/check-schedule.js <<'JS'
+          const fs = require('fs');
+          const vm = require('vm');
+          const src = fs.readFileSync('/tmp/Code.js', 'utf8');
+          const sandbox = {
+            Utilities: {
+              formatDate: (date, _timezone, _pattern) => date.toISOString().slice(0, 10)
+            }
+          };
+          vm.createContext(sandbox);
+          const test = String.raw`
+            const weekA = buildSchedule_('2026-10-21');
+            const weekB = buildSchedule_('2026-10-21');
+            const reelCount = weekA.filter(slot => slot.format === 'Reels').length;
+            if (reelCount !== 1) throw new Error('Expected exactly one Reels slot, found ' + reelCount);
+            if (JSON.stringify(weekA) !== JSON.stringify(weekB)) throw new Error('Schedule is not deterministic');
+            const allowedFormats = ['Reels', 'Carousel', 'Feed (single image)'];
+            weekA.forEach(slot => {
+              if (!allowedFormats.includes(slot.format)) throw new Error('Unknown format: ' + slot.format);
+              const matches = EXAMPLES.filter(example => exampleSupportsFormat_(example, slot.format));
+              if (!matches.length) throw new Error('No matching reference examples for ' + slot.format);
+              matches.forEach(example => {
+                if (!exampleSupportsFormat_(example, slot.format)) throw new Error('Mismatched example: ' + example.id);
+              });
+            });
+            const formatCounts = {};
+            weekA.forEach(slot => formatCounts[slot.format] = (formatCounts[slot.format] || 0) + 1);
+            console.log(JSON.stringify({status:'PASS', slotCount:weekA.length, formatCounts:formatCounts}));
+          `;
+          vm.runInContext(src + '\n' + test, sandbox);
+          JS
+          node /tmp/check-schedule.js
