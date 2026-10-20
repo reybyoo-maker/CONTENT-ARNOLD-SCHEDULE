@@ -156,7 +156,8 @@ function generateWeek_(startIso) {
       .map(function (t) { return t.charAt(0) === '#' ? t : '#' + t.replace(/^#+/, ''); }).join(' ');
     const r1 = chosen[0], r2 = chosen[1] || {};
     const caseSourceId = String(post.case_source_id || '').trim();
-    const caseSource = sourceMap[caseSourceId] || exampleMap[caseSourceId];
+    const caseSource = sourceMap[caseSourceId] ||
+      (caseSourceId.indexOf('AB') === 0 ? exampleMap[caseSourceId] : null);
     const caseLabel = String(post.case_type || '') === 'documented_case'
       ? 'KASUS NYATA — cek ulang detail pada sumber publik: '
       : 'SIMULASI SITUASI LAPANGAN — bukan klaim kejadian nyata: ';
@@ -417,6 +418,13 @@ function validateDraftPosts_(posts, slots, sourceMap, exampleMap) {
       errors.push(label + ': non-Carousel post must have an empty carousel_slides array.');
     }
   });
+  const aiPostCount = posts.filter(function (post) {
+    const topicAndPillar = String(post.topic || '') + ' ' + String(post.pillar || '');
+    return /\bAI\b|artificial intelligence|kecerdasan buatan|ChatGPT|generative AI|GenAI/i.test(topicAndPillar);
+  }).length;
+  if (aiPostCount > 1) {
+    errors.push('Weekly editorial mix: found ' + aiPostCount + ' AI-focused post(s); the limit is one per 7-day batch.');
+  }
   if (errors.length) {
     throw new Error('Draft validation stopped before any calendar rows were written.\n' +
       errors.slice(0, 12).join('\n') +
