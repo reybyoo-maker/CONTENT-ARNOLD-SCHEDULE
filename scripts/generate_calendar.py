@@ -51,10 +51,56 @@ CAL_HEADERS = [
     "Caption Draft", "CTA", "Hashtags", "Reference 1 Title", "Reference 1 Publisher",
     "Reference 1 Published Date", "Reference 1 URL", "Reference 1 Summary",
     "Reference 2 Title", "Reference 2 Publisher", "Reference 2 Published Date",
-    "Reference 2 URL", "Reference 2 Summary", "Original Angle (Not a Copy)",
+    "Reference 2 URL", "Reference 2 Summary", "Creator Example Title", "Creator/Publisher", "Platform", "Example Content URL", "How to Adapt the Format", "Original Angle (Not a Copy)",
     "Fact-check Notes", "Status", "Generated At (WIB)"
 ]
 REF_HEADERS = ["Reference ID", "Article Title", "Publisher", "Published Date", "Article URL", "Summary / Snippet", "Search Query", "Retrieved At (WIB)"]
+CREATOR_TAB = "Creator Examples"
+CREATOR_HEADERS = ["Example ID", "Content Title", "Creator/Publisher", "Platform", "Content URL", "Topic", "What to Study", "Retrieved At (WIB)"]
+CREATOR_EXAMPLES = [
+    {
+        "id": "C1", "title": "A Smarter Way to Delegate: What to Keep vs. What to Hand Off",
+        "creator": "Harvard Business Review", "platform": "LinkedIn post",
+        "url": "https://www.linkedin.com/posts/harvard-business-review_a-smarter-way-to-delegate-what-to-keep-vs-activity-7377051137730056192-bHE0",
+        "topic": "delegation, task ownership, leadership",
+        "lesson": "Notice the direct promise, clear contrast, and practical framing. Create a different original hook and structure; do not copy wording."
+    },
+    {
+        "id": "C2", "title": "Research on Delegating Shows How Uncomfortable We Are Making Choices for Others",
+        "creator": "Harvard Business Review", "platform": "LinkedIn post",
+        "url": "https://www.linkedin.com/posts/harvard-business-review_research-on-delegating-shows-how-uncomfortable-activity-7441976077155008512-M3Y5",
+        "topic": "decision delegation, control, trust",
+        "lesson": "Study how a research idea is converted into a concise question for professionals. Verify facts from a primary source before making claims."
+    },
+    {
+        "id": "C3", "title": "How to Tell If You're Delegating Too Much — and What to Do About It",
+        "creator": "Harvard Business Review", "platform": "LinkedIn post",
+        "url": "https://www.linkedin.com/posts/harvard-business-review_how-to-tell-if-youre-delegating-too-much-activity-7496901240375853056-lCfM",
+        "topic": "manager visibility, delegation, communication",
+        "lesson": "Study the diagnostic framing: recognizable symptoms followed by a useful corrective direction. Do not reuse the exact title."
+    },
+    {
+        "id": "C4", "title": "As Your Team Gets Bigger, Your Leadership Style Has to Adapt",
+        "creator": "Harvard Business Review", "platform": "LinkedIn post",
+        "url": "https://www.linkedin.com/posts/harvard-business-review_as-your-team-gets-bigger-your-leadership-activity-7185955843236855811-PaP0",
+        "topic": "team growth, manager effectiveness, leadership",
+        "lesson": "Study the clear contrast between a familiar situation and a leadership implication. Develop a distinct Indonesian workplace angle."
+    },
+    {
+        "id": "C5", "title": "How to Delegate",
+        "creator": "Harvard Business Review", "platform": "Publisher podcast/article",
+        "url": "https://hbr.org/podcast/2023/09/how-to-delegate",
+        "topic": "delegation, expectations, ownership",
+        "lesson": "Use the expert discussion as a source for the structure of a practical explanation, then develop a fresh local scenario."
+    },
+    {
+        "id": "C6", "title": "One Simple Leadership Skill Nobody Teaches (But Everyone Needs)",
+        "creator": "Simon Sinek", "platform": "Publisher article",
+        "url": "https://simonsinek.com/stories/one-simple-leadership-skill-nobody-teaches",
+        "topic": "leadership, curiosity, communication",
+        "lesson": "Study how a common workplace frustration opens a story before the lesson is explained. Do not imitate the author’s voice."
+    }
+]
 HEADERS = {"User-Agent": "ArnoldWeeklyContentPlanner/1.0"}
 
 def clean(value):
@@ -136,7 +182,7 @@ def expected_dates(start):
         values.append({"date": d.isoformat(), "day": DAYS_ID[d.weekday()], "time_wib": tm, "format": fmt, "frequency": "1 post utama"})
     return values
 
-def generate_posts(start, refs):
+def generate_posts(start, refs, examples):
     key = os.environ.get("GEMINI_API_KEY", "").strip()
     if not key:
         raise RuntimeError("Missing GEMINI_API_KEY secret.")
@@ -149,6 +195,7 @@ def generate_posts(start, refs):
         "url": ref["url"],
         "summary": ref["summary"][:850],
     } for i, ref in enumerate(refs, 1)]
+    example_payload = [{k: e[k] for k in ("id", "title", "creator", "platform", "url", "topic", "lesson")} for e in examples]
     system = """
 You are a research-backed Indonesian editorial strategist for executive coach and leadership trainer Arnold Bolang.
 Niche: leadership, team performance, manager effectiveness, delegation, communication, emotional intelligence,
@@ -160,7 +207,7 @@ testimonials, client stories, or first-person experiences for Arnold. Every post
 If source summaries are weak, use them only as topic inspiration and do not make specific factual claims. No generic empty
 "tips" lists: each post needs a real workplace scenario, a clear insight, and a practical takeaway. Avoid unsupported claims.
 Return valid JSON only: {"posts":[...]} with exactly 7 posts in date order. Each item needs:
-topic, pillar, hook, production_plan, caption, cta, hashtags (3-5), reference_ids (1-2), original_angle, fact_check_notes.
+topic, pillar, hook, production_plan, caption, cta, hashtags (3-5), reference_ids (1-2), example_id, example_adaptation, original_angle, fact_check_notes.
 Pillars allowed: Education, Point of View, Proof of Work, Personal Perspective.
 Reels production_plan: concise 25-40 sec beat sheet including hook, explanation, concrete example, takeaway, and shot direction.
 Carousel production_plan: cover plus 5-7 slide outline, one point per slide, final slide has a useful CTA.
@@ -171,10 +218,12 @@ The source links are articles/reports for inspection, not necessarily Instagram 
     prompt = {
         "schedule": expected_dates(start),
         "available_public_sources": ref_payload,
+        "public_creator_content_examples": example_payload,
         "strict_requirements": [
             "Exactly 7 original post ideas, one per date, matching the dates in schedule.",
             "Reference IDs must be from the supplied list only; each post must cite 1-2 source IDs.",
             "Hooks short enough for cover design; avoid repetitive topics and formulations.",
+            "Choose the best-fitting example_id from public_creator_content_examples for every post and briefly explain example_adaptation. Treat it as a format reference, never copy its words.",
             "One post per day. These are drafts for human review, not instructions to auto-publish.",
             "Do not invent or imply unverified stats or customer proof."
         ],
@@ -224,7 +273,7 @@ def sheet_service():
 def ensure_tabs(service, sid):
     meta = service.spreadsheets().get(spreadsheetId=sid, fields="sheets(properties(sheetId,title))").execute()
     tabs = {s["properties"]["title"]: s["properties"]["sheetId"] for s in meta.get("sheets", [])}
-    missing = [n for n in [CALENDAR_TAB, REFERENCE_TAB] if n not in tabs]
+    missing = [n for n in [CALENDAR_TAB, REFERENCE_TAB, CREATOR_TAB] if n not in tabs]
     if missing:
         service.spreadsheets().batchUpdate(spreadsheetId=sid, body={"requests": [
             {"addSheet": {"properties": {"title": n}}} for n in missing
@@ -265,7 +314,7 @@ def known_urls(service, sid):
 
 def style_sheets(service, sid, tabs):
     reqs = []
-    for tab in (CALENDAR_TAB, REFERENCE_TAB):
+    for tab in (CALENDAR_TAB, REFERENCE_TAB, CREATOR_TAB):
         sheet_id = tabs[tab]
         reqs.extend([
             {"updateSheetProperties": {"properties": {"sheetId": sheet_id, "gridProperties": {"frozenRowCount": 1}}, "fields": "gridProperties.frozenRowCount"}},
@@ -299,13 +348,14 @@ def main():
 
     refs = fetch_references()
     print(f"Found {len(refs)} public source references.")
-    posts = generate_posts(start, refs)
+    posts = generate_posts(start, refs, CREATOR_EXAMPLES)
     source_map = {f"R{i}": ref for i, ref in enumerate(refs[:38], 1)}
 
     service, sid = sheet_service()
     tabs = ensure_tabs(service, sid)
     ensure_header(service, sid, CALENDAR_TAB, CAL_HEADERS)
     ensure_header(service, sid, REFERENCE_TAB, REF_HEADERS)
+    ensure_header(service, sid, CREATOR_TAB, CREATOR_HEADERS)
     present = known_dates(service, sid)
     rows = []
     for offset, post in enumerate(posts):
@@ -321,6 +371,19 @@ def main():
             raise RuntimeError(f"Post {offset + 1} has no valid source reference.")
         r1 = valid[0]
         r2 = valid[1] if len(valid) > 1 else {}
+        example_map = {ex["id"]: ex for ex in CREATOR_EXAMPLES}
+        requested_example = str(post.get("example_id", "")).strip()
+        example = example_map.get(requested_example)
+        if example is None:
+            topic_words = (str(post.get("topic", "")) + " " + str(post.get("hook", ""))).lower()
+            if any(word in topic_words for word in ("deleg", "mendeleg", "ownership", "tugas")):
+                example = example_map["C1"]
+            elif any(word in topic_words for word in ("tim", "team", "manager", "pemimpin", "kepemimpinan")):
+                example = example_map["C4"]
+            elif any(word in topic_words for word in ("komunikasi", "feedback", "emosi", "curiosity")):
+                example = example_map["C6"]
+            else:
+                example = example_map["C2"]
         if d.isoformat() in present:
             print(f"Skipping {d.isoformat()} because it already exists.")
             continue
@@ -335,7 +398,9 @@ def main():
             " ".join(tags), r1.get("title", ""), r1.get("publisher", ""), r1.get("published_date", ""),
             r1.get("url", ""), r1.get("summary", ""), r2.get("title", ""), r2.get("publisher", ""),
             r2.get("published_date", ""), r2.get("url", ""), r2.get("summary", ""),
-            str(post.get("original_angle", "")), str(post.get("fact_check_notes", "")),
+            example["title"], example["creator"], example["platform"], example["url"],
+            str(post.get("example_adaptation", example["lesson"])), str(post.get("original_angle", "")),
+            str(post.get("fact_check_notes", "")),
             "DRAFT — REVIEW BEFORE POSTING", run_time
         ])
     if rows:
@@ -356,6 +421,13 @@ def main():
         service.spreadsheets().values().append(spreadsheetId=sid, range=f"'{REFERENCE_TAB}'!A1",
             valueInputOption="RAW", insertDataOption="INSERT_ROWS", body={"values": ref_rows}).execute()
         print(f"Wrote {len(ref_rows)} source references.")
+    example_rows = [[e["id"], e["title"], e["creator"], e["platform"], e["url"], e["topic"], e["lesson"], run_time] for e in CREATOR_EXAMPLES]
+    current_example_urls = {str(row[0]).strip() for row in values_get(service, sid, f"'{CREATOR_TAB}'!E2:E") if row and str(row[0]).strip()}
+    fresh_example_rows = [row for row in example_rows if row[4] not in current_example_urls]
+    if fresh_example_rows:
+        service.spreadsheets().values().append(spreadsheetId=sid, range=f"'{CREATOR_TAB}'!A1",
+            valueInputOption="RAW", insertDataOption="INSERT_ROWS", body={"values": fresh_example_rows}).execute()
+        print(f"Wrote {len(fresh_example_rows)} curated creator/content examples.")
     style_sheets(service, sid, tabs)
     print("Done. Review every draft and fact-check it before posting.")
     print(f"Spreadsheet: https://docs.google.com/spreadsheets/d/{sid}/edit")
