@@ -289,7 +289,7 @@ function generatePostsBatch_(slots, refs) {
     return {id:e.id,title:e.title,creator:e.creator,platform:e.platform,url:e.url,topic:e.topic,lesson:e.lesson,format_match:e.formatMatch};
   });
   const system = [
-    'You are the Indonesian editorial strategist for Arnold Priadi Bolang, a coach, facilitator and trainer. Build content aligned with his real, public professional positioning, not a generic influencer brand.',
+    'You are an Indonesian editorial strategist for a leadership coach and management trainer. Build content for a professional audience, based on credible leadership research and practical workplace situations.',
     'PRIMARY NICHE: practical leadership, manager effectiveness, team performance, delegation, accountability, feedback, workplace communication, emotional intelligence, conflict, supervisor development, executive presence, decision-making, and productivity through better people management.',
     'EDITORIAL PRIORITY: at least 80% of posts must directly concern leadership, people management, teams or real workplace practice. AI/tool content is optional and limited to at most ONE post per 7-day batch; do not force AI into unrelated topics.',
     'Use independent, reputable publishers, researchers and public practitioners for content references. Do not search for or cite the account owner, the brand owner, their profile, their posts, or their client work as example references.',
@@ -301,8 +301,8 @@ function generatePostsBatch_(slots, refs) {
     'For non-Carousel posts, carousel_slides must be an empty array.',
     'Reels: give a 25–40 second speaking script/production_plan with 0–3 second hook, scene-by-scene beats, concrete workplace example, takeaway and shot direction. Do not return only a vague outline.',
     'Feed (single image): include a short visual concept and a concise in-image statement; keep the full explanation in caption.',
-    'Caption: Bahasa Indonesia, about 80–150 words, useful professional tone, clear insight, practical step and natural CTA. Avoid fake first-person anecdotes from Arnold.',
-    'Pillars should fit: Leadership in Practice, Manager Toolkit, Team Performance, Delegation & Accountability, Communication & Emotional Intelligence, Workplace Case, Arnold Public Field Insight, or Professional Productivity. Do not use AI as a pillar unless the post genuinely requires it.',
+    'Caption: Bahasa Indonesia, about 80–150 words, useful professional tone, clear insight, practical step and natural CTA. Never invent first-person anecdotes or client experiences for the account owner.',
+    'Pillars should fit: Leadership in Practice, Manager Toolkit, Team Performance, Delegation & Accountability, Communication & Emotional Intelligence, Workplace Case, Practitioner Insight, or Professional Productivity. Do not use AI as a pillar unless the post genuinely requires it.',
     'Return valid JSON only: {"posts":[...]} with exactly one post per supplied slot, in the same order. Keep the response complete; never omit a slot or shorten required carousel slide copy.',
     'Required post fields: topic, pillar, hook, production_plan, carousel_slides, caption, cta, hashtags (array of 3–5), reference_ids (array of 1–2 valid R IDs), example_id, example_format_match, example_adaptation, original_angle, case_type, case_or_field_scenario, case_source_id (R ID or AB ID for documented cases, otherwise empty string), fact_check_notes.',
     'The research reference should support factual claims. Creator examples are inspiration for content format only and must never be presented as evidence of a client result or as a case study unless the source itself documents the case.',
@@ -312,7 +312,7 @@ function generatePostsBatch_(slots, refs) {
     'Source links are references to verify, not permission to copy. Create original explanations, examples, and slide sentences.'
   ].join('\n');
   const prompt = {
-    niche: 'Arnold Priadi Bolang — coach, facilitator and trainer; practical leadership and people development',
+    niche: 'Leadership coaching, manager effectiveness, team performance, and people development for an Indonesian professional audience',
     schedule_slots: slots.map(function (slot) {
       return {
         date: slot.date, day: slot.day, time: slot.time, format: slot.format,
@@ -344,7 +344,7 @@ function generatePostsBatch_(slots, refs) {
       'The full seven-day calendar contains exactly one Reels slot, but this API request may contain only a subset. Do not change the specific format on any supplied slot. Do not force a Reels post into a subset with no Reels slot.',
       'At least 80% of topics must be leadership/people management/workplace practice. Prefer zero AI-related posts; do not make AI the topic of any post in this batch.',
       'Use documented cases only when source-backed; otherwise label the scenario as illustrative.',
-      'Avoid repeating the same topic or hook. No fake statistics, testimonials or invented Arnold experiences.',
+      'Avoid repeating the same topic or hook. No fake statistics, testimonials or invented personal experiences or client outcomes.',
       'Drafts only. Do not publish to Instagram.'
     ]
   };
@@ -573,12 +573,21 @@ function collectReferences_() {
 function isTrustedReference_(publisher, url, query) {
   const p = String(publisher || '').toLowerCase();
   const u = String(url || '').toLowerCase();
-  const q = String(query || '').toLowerCase();
-  // LinkedIn is accepted only for searches explicitly targeting Arnold's public professional material.
   return /harvard business review|hbr\.org|gallup|mit sloan|sloan management review|center for creative leadership|\bccl\b|shrm|mckinsey|atlassian|american psychological association|\bapa\b|greater good|berkeley|cipd|chartered institute of personnel|ddi|google rework|deloitte|stanford|harvard business school|\bhbs\b|world economic forum|weforum|nature\.com|frontiersin|pubmed|nih\.gov|national institutes of health|sloanreview\.mit\.edu|rework\.withgoogle\.com|ted\.com/.test(p + ' ' + u);
 }
 
 function appendReferences_(sheet, refs) {
+  // Purge owner/profile references left by earlier versions before adding independent sources.
+  const before = sheet.getLastRow();
+  if (before > 1) {
+    const previous = sheet.getRange(2,1,before-1,REF_HEADERS.length).getDisplayValues();
+    for (let i = previous.length - 1; i >= 0; i--) {
+      const searchText = [previous[i][1], previous[i][2], previous[i][4], previous[i][6]].join(' ').toLowerCase();
+      if (/arnold\s+priadi\s+bolang|linkedin\.com\/(?:in|posts)\/arnold-priadi-bolang/.test(searchText)) {
+        sheet.deleteRow(i + 2);
+      }
+    }
+  }
   const last = sheet.getLastRow();
   const currentUrls = last > 1 ? sheet.getRange(2,5,last-1,1).getDisplayValues().flat() : [];
   const known = {};
