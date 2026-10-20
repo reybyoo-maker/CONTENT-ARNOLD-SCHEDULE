@@ -1,0 +1,368 @@
+#!/usr/bin/env python3
+"""Generate one research-backed week of Instagram content and write it to Google Sheets."""
+
+import html
+import json
+import os
+import re
+import sys
+import time
+from datetime import date, datetime, timedelta, timezone
+from email.utils import parsedate_to_datetime
+from urllib.parse import urlparse
+from zoneinfo import ZoneInfo
+import xml.etree.ElementTree as ET
+
+import requests
+from google.oauth2 import service_account
+from googleapiclient.discovery import build
+
+WIB = ZoneInfo("Asia/Jakarta")
+MODEL_DEFAULT = "gemini-3.5-flash-lite"
+NEWS_RSS = "https://news.google.com/rss/search"
+CALENDAR_TAB = "Content Calendar"
+REFERENCE_TAB = "Reference Library"
+DAYS_ID = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu", "Minggu"]
+SCHEDULE = {
+    0: ("Reels", "19:00"),
+    1: ("Carousel", "12:15"),
+    2: ("Reels", "19:00"),
+    3: ("Carousel", "12:15"),
+    4: ("Reels", "19:00"),
+    5: ("Feed (single image)", "10:00"),
+    6: ("Carousel", "19:00"),
+}
+QUERIES = [
+    "site:hbr.org leadership teams manager workplace when:365d",
+    "site:gallup.com workplace manager employee engagement when:365d",
+    "site:sloanreview.mit.edu leadership teamwork organization when:365d",
+    "site:ccl.org leadership delegation feedback emotional intelligence when:365d",
+    "site:shrm.org leadership workplace managers teams when:365d",
+    "site:mckinsey.com/featured-insights leadership organization people when:365d",
+    "site:atlassian.com/blog teamwork collaboration workplace when:365d",
+    "site:apa.org workplace stress leadership teams when:365d",
+    "site:greatergood.berkeley.edu empathy emotional intelligence work when:365d",
+    "leadership team effectiveness workplace communication delegation research when:365d",
+    "manager employee engagement emotional intelligence workplace study when:365d",
+]
+CAL_HEADERS = [
+    "Publish Date", "Day", "Posting Time (WIB)", "Posts Per Day", "Format",
+    "Content Pillar", "Topic", "Hook / Cover Text", "Production Plan / Slide Outline",
+    "Caption Draft", "CTA", "Hashtags", "Reference 1 Title", "Reference 1 Publisher",
+    "Reference 1 Published Date", "Reference 1 URL", "Reference 1 Summary",
+    "Reference 2 Title", "Reference 2 Publisher", "Reference 2 Published Date",
+    "Reference 2 URL", "Reference 2 Summary", "Original Angle (Not a Copy)",
+    "Fact-check Notes", "Status", "Generated At (WIB)"
+]
+REF_HEADERS = ["Reference ID", "Article Title", "Publisher", "Published Date", "Article URL", "Summary / Snippet", "Search Query", "Retrieved At (WIB)"]
+HEADERS = {"User-Agent": "ArnoldWeeklyContentPlanner/1.0"}
+
+def clean(value):
+    value = re.sub(r"<[^>]+>", " ", value or "")
+    return re.sub(r"\s+", " ", html.unescape(value)).strip()
+
+def pub_date(value):
+    try:
+        dt = parsedate_to_datetime(value)
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        return dt.astimezone(timezone.utc).date().isoformat()
+    except Exception:
+        return ""
+
+def resolve_link(url):
+    if "news.google.com" not in url:
+        return url
+    try:
+        r = requests.get(url, headers=HEADERS, timeout=7, allow_redirects=True, stream=True)
+        final = r.url
+        r.close()
+        if final and "news.google.com" not in urlparse(final).netloc:
+            return final
+    except requests.RequestException:
+        pass
+    return url
+
+def fetch_references():
+    items, errors = [], []
+    for query in QUERIES:
+        try:
+            r = requests.get(NEWS_RSS, params={"q": query, "hl": "en-US", "gl": "US", "ceid": "US:en"}, headers=HEADERS, timeout=22)
+            r.raise_for_status()
+            root = ET.fromstring(r.content)
+            for node in root.findall("./channel/item")[:10]:
+                title = clean(node.findtext("title"))
+                link = clean(node.findtext("link"))
+                source = node.find("source")
+                publisher = clean(source.text if source is not None else "")
+                publisher_url = source.attrib.get("url", "") if source is not None else ""
+                if not publisher and publisher_url:
+                    publisher = urlparse(publisher_url).netloc.replace("www.", "")
+                if title and link:
+                    items.append({
+                        "title": title,
+                        "url": link,
+                        "publisher": publisher or "Publisher in linked article",
+                        "published_date": pub_date(node.findtext("pubDate")),
+                        "summary": clean(node.findtext("description"))[:1400] or "No summary supplied by feed; inspect the linked source before using factual claims.",
+                        "query": query,
+                    })
+        except (requests.RequestException, ET.ParseError) as exc:
+            errors.append(f"{query}: {exc}")
+        time.sleep(0.25)
+
+    deduped, seen = [], set()
+    for ref in items:
+        key = (ref["title"].lower(), ref["url"])
+        if key not in seen:
+            seen.add(key)
+            deduped.append(ref)
+    if len(deduped) < 8:
+        raise RuntimeError(f"Only {len(deduped)} distinct public sources found. Refusing to generate unsupported content. Try again later. {errors[-3:]}")
+    for ref in deduped[:28]:
+        ref["url"] = resolve_link(ref["url"])
+    result, urls = [], set()
+    for ref in deduped:
+        if ref["url"] not in urls:
+            urls.add(ref["url"])
+            result.append(ref)
+    return result[:38]
+
+def expected_dates(start):
+    values = []
+    for i in range(7):
+        d = start + timedelta(days=i)
+        fmt, tm = SCHEDULE[d.weekday()]
+        values.append({"date": d.isoformat(), "day": DAYS_ID[d.weekday()], "time_wib": tm, "format": fmt, "frequency": "1 post utama"})
+    return values
+
+def generate_posts(start, refs):
+    key = os.environ.get("GEMINI_API_KEY", "").strip()
+    if not key:
+        raise RuntimeError("Missing GEMINI_API_KEY secret.")
+    model = os.environ.get("GEMINI_MODEL", "").strip() or MODEL_DEFAULT
+    ref_payload = [{
+        "id": f"R{i}",
+        "title": ref["title"],
+        "publisher": ref["publisher"],
+        "published_date": ref["published_date"],
+        "url": ref["url"],
+        "summary": ref["summary"][:850],
+    } for i, ref in enumerate(refs, 1)]
+    system = """
+You are a research-backed Indonesian editorial strategist for executive coach and leadership trainer Arnold Bolang.
+Niche: leadership, team performance, manager effectiveness, delegation, communication, emotional intelligence,
+workplace behavior, executive presence, and productivity. Create original, useful content for Indonesian professionals.
+Do not copy a source's wording or mimic another creator's voice.
+
+FACT RULES: use only source IDs and URLs given in the input. Never invent article URLs, statistics, studies, quotes,
+testimonials, client stories, or first-person experiences for Arnold. Every post must cite at least one supplied reference ID.
+If source summaries are weak, use them only as topic inspiration and do not make specific factual claims. No generic empty
+"tips" lists: each post needs a real workplace scenario, a clear insight, and a practical takeaway. Avoid unsupported claims.
+Return valid JSON only: {"posts":[...]} with exactly 7 posts in date order. Each item needs:
+topic, pillar, hook, production_plan, caption, cta, hashtags (3-5), reference_ids (1-2), original_angle, fact_check_notes.
+Pillars allowed: Education, Point of View, Proof of Work, Personal Perspective.
+Reels production_plan: concise 25-40 sec beat sheet including hook, explanation, concrete example, takeaway, and shot direction.
+Carousel production_plan: cover plus 5-7 slide outline, one point per slide, final slide has a useful CTA.
+Feed production_plan: visual concept, short in-image statement, and caption angle.
+Caption: Indonesian, 80-150 words, concrete first line, useful explanation, applicable takeaway, natural CTA.
+The source links are articles/reports for inspection, not necessarily Instagram posts. Do not describe them as Instagram posts.
+""".strip()
+    prompt = {
+        "schedule": expected_dates(start),
+        "available_public_sources": ref_payload,
+        "strict_requirements": [
+            "Exactly 7 original post ideas, one per date, matching the dates in schedule.",
+            "Reference IDs must be from the supplied list only; each post must cite 1-2 source IDs.",
+            "Hooks short enough for cover design; avoid repetitive topics and formulations.",
+            "One post per day. These are drafts for human review, not instructions to auto-publish.",
+            "Do not invent or imply unverified stats or customer proof."
+        ],
+    }
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
+    resp = requests.post(url, headers={"Content-Type": "application/json", "x-goog-api-key": key},
+        json={"systemInstruction": {"parts": [{"text": system}]},
+              "contents": [{"role": "user", "parts": [{"text": json.dumps(prompt, ensure_ascii=False)}]}],
+              "generationConfig": {"temperature": 0.5, "responseMimeType": "application/json", "maxOutputTokens": 8500}},
+        timeout=150)
+    if not resp.ok:
+        raise RuntimeError(f"Gemini API HTTP {resp.status_code}: {resp.text[:1300]}")
+    body = resp.json()
+    try:
+        raw = "\n".join(p.get("text", "") for p in body["candidates"][0]["content"]["parts"] if p.get("text")).strip()
+    except (KeyError, IndexError, TypeError) as exc:
+        raise RuntimeError(f"Unexpected Gemini response: {json.dumps(body)[:1000]}") from exc
+    fence = chr(96) * 3
+    lines = raw.splitlines()
+    if lines and lines[0].strip().startswith(fence):
+        lines = lines[1:]
+    if lines and lines[-1].strip() == fence:
+        lines = lines[:-1]
+    try:
+        parsed = json.loads("\n".join(lines).strip())
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(f"Gemini response was not valid JSON: {raw[:1500]}") from exc
+    posts = parsed.get("posts")
+    if not isinstance(posts, list) or len(posts) != 7:
+        raise RuntimeError("Gemini must return exactly 7 posts.")
+    return posts
+
+def sheet_service():
+    sheet_id = os.environ.get("GOOGLE_SHEET_ID", "").strip()
+    raw = os.environ.get("GOOGLE_SERVICE_ACCOUNT_JSON", "").strip()
+    if not sheet_id:
+        raise RuntimeError("Missing GOOGLE_SHEET_ID secret.")
+    if not raw:
+        raise RuntimeError("Missing GOOGLE_SERVICE_ACCOUNT_JSON secret.")
+    try:
+        info = json.loads(raw)
+    except json.JSONDecodeError as exc:
+        raise RuntimeError("GOOGLE_SERVICE_ACCOUNT_JSON must be the full service-account JSON file.") from exc
+    creds = service_account.Credentials.from_service_account_info(info, scopes=["https://www.googleapis.com/auth/spreadsheets"])
+    return build("sheets", "v4", credentials=creds, cache_discovery=False), sheet_id
+
+def ensure_tabs(service, sid):
+    meta = service.spreadsheets().get(spreadsheetId=sid, fields="sheets(properties(sheetId,title))").execute()
+    tabs = {s["properties"]["title"]: s["properties"]["sheetId"] for s in meta.get("sheets", [])}
+    missing = [n for n in [CALENDAR_TAB, REFERENCE_TAB] if n not in tabs]
+    if missing:
+        service.spreadsheets().batchUpdate(spreadsheetId=sid, body={"requests": [
+            {"addSheet": {"properties": {"title": n}}} for n in missing
+        ]}).execute()
+        meta = service.spreadsheets().get(spreadsheetId=sid, fields="sheets(properties(sheetId,title))").execute()
+        tabs = {s["properties"]["title"]: s["properties"]["sheetId"] for s in meta.get("sheets", [])}
+    return tabs
+
+def values_get(service, sid, range_name):
+    return service.spreadsheets().values().get(spreadsheetId=sid, range=range_name, valueRenderOption="FORMATTED_VALUE").execute().get("values", [])
+
+def ensure_header(service, sid, tab, headers):
+    values = values_get(service, sid, f"'{tab}'!A1:AZ1")
+    if not values or not any(str(x).strip() for x in values[0]):
+        service.spreadsheets().values().update(spreadsheetId=sid, range=f"'{tab}'!A1", valueInputOption="RAW", body={"values": [headers]}).execute()
+    elif any(h not in values[0] for h in headers):
+        raise RuntimeError(f"Tab {tab!r} has incompatible headers. Use a new blank spreadsheet or align its header row.")
+
+def known_dates(service, sid):
+    rows = values_get(service, sid, f"'{CALENDAR_TAB}'!A2:A")
+    result = set()
+    for row in rows:
+        if row:
+            v = str(row[0]).strip()
+            if re.fullmatch(r"\d{4}-\d{2}-\d{2}", v):
+                result.add(v)
+            else:
+                for fmt in ("%m/%d/%Y", "%d/%m/%Y", "%d %b %Y"):
+                    try:
+                        result.add(datetime.strptime(v, fmt).date().isoformat())
+                        break
+                    except ValueError:
+                        pass
+    return result
+
+def known_urls(service, sid):
+    return {str(row[0]).strip() for row in values_get(service, sid, f"'{REFERENCE_TAB}'!E2:E") if row and str(row[0]).strip()}
+
+def style_sheets(service, sid, tabs):
+    reqs = []
+    for tab in (CALENDAR_TAB, REFERENCE_TAB):
+        sheet_id = tabs[tab]
+        reqs.extend([
+            {"updateSheetProperties": {"properties": {"sheetId": sheet_id, "gridProperties": {"frozenRowCount": 1}}, "fields": "gridProperties.frozenRowCount"}},
+            {"repeatCell": {"range": {"sheetId": sheet_id, "startRowIndex": 0, "endRowIndex": 1},
+             "cell": {"userEnteredFormat": {"backgroundColor": {"red": 0.035, "green": 0.09, "blue": 0.22},
+             "textFormat": {"foregroundColor": {"red": 1, "green": 1, "blue": 1}, "bold": True},
+             "verticalAlignment": "MIDDLE", "wrapStrategy": "WRAP"}},
+             "fields": "userEnteredFormat(backgroundColor,textFormat,verticalAlignment,wrapStrategy)"}},
+            {"repeatCell": {"range": {"sheetId": sheet_id, "startRowIndex": 1},
+             "cell": {"userEnteredFormat": {"verticalAlignment": "TOP", "wrapStrategy": "WRAP"}},
+             "fields": "userEnteredFormat(verticalAlignment,wrapStrategy"}},
+            {"updateDimensionProperties": {"range": {"sheetId": sheet_id, "dimension": "ROWS", "startIndex": 0, "endIndex": 1},
+             "properties": {"pixelSize": 44}, "fields": "pixelSize"}},
+        ])
+    try:
+        service.spreadsheets().batchUpdate(spreadsheetId=sid, body={"requests": reqs}).execute()
+    except Exception as exc:
+        print(f"Warning: optional sheet formatting failed: {exc}", file=sys.stderr)
+
+def main():
+    start_text = os.environ.get("START_DATE", "").strip()
+    if start_text:
+        try:
+            start = date.fromisoformat(start_text)
+        except ValueError as exc:
+            raise RuntimeError("START_DATE must use YYYY-MM-DD, such as 2026-10-21.") from exc
+    else:
+        start = datetime.now(WIB).date()
+    run_time = datetime.now(WIB).strftime("%Y-%m-%d %H:%M:%S WIB")
+    print(f"Researching posts for {start.isoformat()} through {(start + timedelta(days=6)).isoformat()} WIB.")
+
+    refs = fetch_references()
+    print(f"Found {len(refs)} public source references.")
+    posts = generate_posts(start, refs)
+    source_map = {f"R{i}": ref for i, ref in enumerate(refs[:38], 1)}
+
+    service, sid = sheet_service()
+    tabs = ensure_tabs(service, sid)
+    ensure_header(service, sid, CALENDAR_TAB, CAL_HEADERS)
+    ensure_header(service, sid, REFERENCE_TAB, REF_HEADERS)
+    present = known_dates(service, sid)
+    rows = []
+    for offset, post in enumerate(posts):
+        if not isinstance(post, dict):
+            raise RuntimeError(f"Post {offset + 1} is not a JSON object.")
+        d = start + timedelta(days=offset)
+        fmt, clock = SCHEDULE[d.weekday()]
+        ids = post.get("reference_ids", [])
+        if isinstance(ids, str):
+            ids = [ids]
+        valid = [source_map[x] for x in ids if x in source_map][:2] if isinstance(ids, list) else []
+        if not valid:
+            raise RuntimeError(f"Post {offset + 1} has no valid source reference.")
+        r1 = valid[0]
+        r2 = valid[1] if len(valid) > 1 else {}
+        if d.isoformat() in present:
+            print(f"Skipping {d.isoformat()} because it already exists.")
+            continue
+        tags = post.get("hashtags", [])
+        if isinstance(tags, str):
+            tags = tags.split()
+        tags = [t if str(t).startswith("#") else "#" + str(t).lstrip("#") for t in tags[:5]]
+        rows.append([
+            d.isoformat(), DAYS_ID[d.weekday()], f"{clock} WIB", "1 post utama", fmt,
+            str(post.get("pillar", "Education")), str(post.get("topic", "")), str(post.get("hook", "")),
+            str(post.get("production_plan", "")), str(post.get("caption", "")), str(post.get("cta", "")),
+            " ".join(tags), r1.get("title", ""), r1.get("publisher", ""), r1.get("published_date", ""),
+            r1.get("url", ""), r1.get("summary", ""), r2.get("title", ""), r2.get("publisher", ""),
+            r2.get("published_date", ""), r2.get("url", ""), r2.get("summary", ""),
+            str(post.get("original_angle", "")), str(post.get("fact_check_notes", "")),
+            "DRAFT — REVIEW BEFORE POSTING", run_time
+        ])
+    if rows:
+        service.spreadsheets().values().append(spreadsheetId=sid, range=f"'{CALENDAR_TAB}'!A1",
+            valueInputOption="RAW", insertDataOption="INSERT_ROWS", body={"values": rows}).execute()
+        print(f"Wrote {len(rows)} new calendar rows.")
+    else:
+        print("All 7 dates already exist; no duplicate calendar rows added.")
+
+    urls = known_urls(service, sid)
+    ref_rows = []
+    for i, ref in enumerate(refs, 1):
+        if ref["url"] not in urls:
+            ref_rows.append([f"REF-{len(urls) + len(ref_rows) + 1:04d}", ref["title"], ref["publisher"],
+                ref["published_date"], ref["url"], ref["summary"], ref["query"], run_time])
+            urls.add(ref["url"])
+    if ref_rows:
+        service.spreadsheets().values().append(spreadsheetId=sid, range=f"'{REFERENCE_TAB}'!A1",
+            valueInputOption="RAW", insertDataOption="INSERT_ROWS", body={"values": ref_rows}).execute()
+        print(f"Wrote {len(ref_rows)} source references.")
+    style_sheets(service, sid, tabs)
+    print("Done. Review every draft and fact-check it before posting.")
+    print(f"Spreadsheet: https://docs.google.com/spreadsheets/d/{sid}/edit")
+
+if __name__ == "__main__":
+    try:
+        main()
+    except Exception as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        sys.exit(1)
