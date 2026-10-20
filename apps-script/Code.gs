@@ -239,6 +239,55 @@ function shuffle_(array, rng) {
 }
 
 function generatePosts_(slots, refs) {
+  // Keep each Gemini request small so it is less likely to omit posts or truncate long carousel copy.
+  const batchSize = 3;
+  const batchPosts = [];
+  for (let start = 0; start < slots.length; start += batchSize) {
+    const batch = slots.slice(start, start + batchSize);
+    const posts = generatePostsBatchWithRetry_(batch, refs, 2);
+    Array.prototype.push.apply(batchPosts, posts);
+  }
+  if (batchPosts.length !== slots.length) {
+    throw new Error('Internal batch generation mismatch: expected ' + slots.length +
+      ' posts, received ' + batchPosts.length + '. No calendar rows were written.');
+  }
+  return batchPosts;
+}
+
+function generatePostsBatchWithRetry_(slots, refs, maxAttempts) {
+  let lastError = null;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      const posts = generatePostsBatch_(slots, refs);
+      if (Array.isArray(posts) && posts.length === slots.length) return posts;
+      throw new Error('Expected ' + slots.length + ' posts, received ' +
+        (posts && posts.length !== undefined ? posts.length : 'no posts') + '.');
+    } catch (e) {
+      lastError = e;
+      Logger.log('Gemini batch failed (' + slots.length + ' slot(s), attempt ' + attempt + '/' +
+        maxAttempts + '): ' + e.message);
+    }
+  }
+
+  // If a multi-slot request still misses posts after retrying, fall back to one slot per request.
+  // This keeps the full calendar intact while preventing one long response from blocking all drafts.
+  if (slots.length > 1) {
+    Logger.log('Falling back to individual slot generation for ' + slots.length + ' slot(s).');
+    const recovered = [];
+    slots.forEach(function (slot) {
+      const one = generatePostsBatchWithRetry_([slot], refs, 2);
+      Array.prototype.push.apply(recovered, one);
+    });
+    return recovered;
+  }
+
+  throw new Error('Could not generate content for ' + slots[0].date + ' (' + slots[0].format +
+    ') after ' + maxAttempts + ' attempts. Last error: ' +
+    String(lastError && lastError.message || 'unknown Gemini response error') +
+    '. No calendar rows were written. Open Apps Script → Executions for details.');
+}
+
+function generatePostsBatch_(slots, refs) {
   const key = PropertiesService.getScriptProperties().getProperty(CFG.API_KEY_PROP);
   const sources = refs.slice(0, 35).map(function (r, i) {
     return {id: 'R' + (i + 1), title: r.title, publisher: r.publisher, published_date: r.publishedDate, url: r.url, summary: String(r.summary || '').slice(0, 800)};
@@ -261,7 +310,7 @@ function generatePosts_(slots, refs) {
     'Feed (single image): include a short visual concept and a concise in-image statement; keep the full explanation in caption.',
     'Caption: Bahasa Indonesia, about 80–150 words, useful professional tone, clear insight, practical step and natural CTA. Avoid fake first-person anecdotes from Arnold.',
     'Pillars should fit: Leadership in Practice, Manager Toolkit, Team Performance, Delegation & Accountability, Communication & Emotional Intelligence, Workplace Case, Arnold Public Field Insight, or Professional Productivity. Do not use AI as a pillar unless the post genuinely requires it.',
-    'Return valid JSON only: {"posts":[...]} with exactly one post per supplied slot, in the same order. There can be 7–21 posts.',
+    'Return valid JSON only: {"posts":[...]} with exactly one post per supplied slot, in the same order. Keep the response complete; never omit a slot or shorten required carousel slide copy.',
     'Required post fields: topic, pillar, hook, production_plan, carousel_slides, caption, cta, hashtags (array of 3–5), reference_ids (array of 1–2 valid R IDs), example_id, example_format_match, example_adaptation, original_angle, case_type, case_or_field_scenario, case_source_id (R ID or AB ID for documented cases, otherwise empty string), fact_check_notes.',
     'The research reference should support factual claims. A first-party Arnold post may be selected as case_source_id when the post refers specifically to a public example from Arnold. Do not imply that an external creator’s post is evidence of Arnold’s experience.',
     'Every schedule slot includes allowed_creator_examples filtered to the same format. Select example_id only from that list, and set example_format_match to the selected example’s exact format_match metadata.',
@@ -284,7 +333,7 @@ function generatePosts_(slots, refs) {
     }),
     editorial_priorities: {
       min_share_leadership_people_management_and_workplace_practice: '80%',
-      ai_related_posts: '0 or 1 post per 7-day batch; optional, never forced',
+      ai_related_posts: 'Prefer 0 AI-related posts. Do not make AI a topic in this generation batch; focus on leadership and workplace practice.',
       real_cases: 'Use only when a supplied reputable/public source supports the detail',
       otherwise: 'Use a clearly labelled illustrative workplace scenario, never present it as a true client story',
       field_focus: 'Manager and supervisor decisions, team friction, feedback conversations, delegation, accountability, performance, change and communication'
@@ -302,7 +351,7 @@ function generatePosts_(slots, refs) {
       'For the selected example, output example_format_match and make it exactly equal to the slot format family.',
       'Reels must use a direct video example, Carousel must use an identified carousel, Feed must use a static/single-image post. Do not use an article, profile or unverified-format post as a content format reference.',
       'Exactly one schedule slot in this seven-day batch is Reels. All remaining slots are Carousel or Feed.',
-      'At least 80% of topics must be leadership/people management/workplace practice; AI is optional and limited to at most one post in this week.',
+      'At least 80% of topics must be leadership/people management/workplace practice. Prefer zero AI-related posts; do not make AI the topic of any post in this batch.',
       'Use documented cases only when source-backed; otherwise label the scenario as illustrative.',
       'Avoid repeating the same topic or hook. No fake statistics, testimonials or invented Arnold experiences.',
       'Drafts only. Do not publish to Instagram.'
