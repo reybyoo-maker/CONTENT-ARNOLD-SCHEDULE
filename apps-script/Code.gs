@@ -161,7 +161,7 @@ function generateWeek_(startIso) {
       ? 'KASUS NYATA — cek ulang detail pada sumber publik: '
       : 'SIMULASI SITUASI LAPANGAN — bukan klaim kejadian nyata: ';
     const caseNotes = caseLabel + String(post.case_or_field_scenario || '') +
-      (caseSource ? '\\nSumber kasus: ' + (caseSource.title || '') + '\\n' + caseSource.url : '');
+      (caseSource ? '\nSumber kasus: ' + (caseSource.title || '') + '\n' + caseSource.url : '');
 
     rows.push([
       slot.date, slot.day, slot.dailyCount + ' post/hari — slot ' + slot.postNumber + '/' + slot.dailyCount,
@@ -247,7 +247,7 @@ function generatePosts_(slots, refs) {
     'Required post fields: topic, pillar, hook, production_plan, carousel_slides, caption, cta, hashtags (array of 3–5), reference_ids (array of 1–2 valid R IDs), example_id, example_adaptation, original_angle, case_type, case_or_field_scenario, case_source_id (R ID or AB ID for documented cases, otherwise empty string), fact_check_notes.',
     'The research reference should support factual claims. A first-party Arnold post may be selected as case_source_id when the post refers specifically to a public example from Arnold. Do not imply that an external creator’s post is evidence of Arnold’s experience.',
     'Source links are references to verify, not permission to copy. Create original explanations, examples, and slide sentences.'
-  ].join('\\n');
+  ].join('\n');
   const prompt = {
     niche: 'Arnold Priadi Bolang — coach, facilitator and trainer; practical leadership and people development',
     schedule_slots: slots,
@@ -367,7 +367,7 @@ function repairGeminiJson_(endpoint, apiKey, invalidText, originalError) {
 
 function countWords_(text) {
   const value = String(text || '').trim();
-  return value ? value.split(/\\s+/).filter(Boolean).length : 0;
+  return value ? value.split(/\s+/).filter(Boolean).length : 0;
 }
 
 function validateDraftPosts_(posts, slots, sourceMap, exampleMap) {
@@ -418,10 +418,10 @@ function validateDraftPosts_(posts, slots, sourceMap, exampleMap) {
     }
   });
   if (errors.length) {
-    throw new Error('Draft validation stopped before any calendar rows were written.\\n' +
-      errors.slice(0, 12).join('\\n') +
-      (errors.length > 12 ? '\\n…and ' + (errors.length - 12) + ' more issue(s).' : '') +
-      '\\nRun the generator again; if it repeats, review Apps Script → Executions.');
+    throw new Error('Draft validation stopped before any calendar rows were written.\n' +
+      errors.slice(0, 12).join('\n') +
+      (errors.length > 12 ? '\n…and ' + (errors.length - 12) + ' more issue(s).' : '') +
+      '\nRun the generator again; if it repeats, review Apps Script → Executions.');
   }
 }
 
@@ -431,10 +431,10 @@ function formatCarouselSlides_(post, format) {
   return slides.map(function (slide, index) {
     const number = Number(slide.slide_number) || (index + 1);
     const role = String(slide.role || 'slide').replace(/_/g, ' ').toUpperCase();
-    return 'SLIDE ' + number + ' — ' + role + '\\n' +
+    return 'SLIDE ' + number + ' — ' + role + '\n' +
       String(slide.slide_text || '').trim() +
-      (slide.visual_direction ? '\\nArahan visual: ' + String(slide.visual_direction).trim() : '');
-  }).join('\\n\\n');
+      (slide.visual_direction ? '\nArahan visual: ' + String(slide.visual_direction).trim() : '');
+  }).join('\n\n');
 }
 
 function collectReferences_() {
@@ -476,9 +476,9 @@ function isTrustedReference_(publisher, url, query) {
   const u = String(url || '').toLowerCase();
   const q = String(query || '').toLowerCase();
   // LinkedIn is accepted only for searches explicitly targeting Arnold's public professional material.
-  if (/arnold priadi bolang|linkedin\\.com\\/posts\\/arnold-priadi-bolang/.test(q) &&
+  if (/arnold priadi bolang|linkedin\.com\/posts\/arnold-priadi-bolang/.test(q) &&
       /linkedin|arnold priadi bolang/.test(p + ' ' + u)) return true;
-  return /harvard business review|hbr\\.org|gallup|mit sloan|sloan management review|center for creative leadership|\\bccl\\b|shrm|mckinsey|atlassian|american psychological association|\\bapa\\b|greater good|berkeley|cipd|chartered institute of personnel|ddi|google rework|deloitte|stanford|harvard business school|\\bhbs\\b|world economic forum|weforum|nature\\.com|frontiersin|pubmed|nih\\.gov|national institutes of health|sloanreview\\.mit\\.edu|rework\\.withgoogle\\.com/.test(p + ' ' + u);
+  return /harvard business review|hbr\.org|gallup|mit sloan|sloan management review|center for creative leadership|\bccl\b|shrm|mckinsey|atlassian|american psychological association|\bapa\b|greater good|berkeley|cipd|chartered institute of personnel|ddi|google rework|deloitte|stanford|harvard business school|\bhbs\b|world economic forum|weforum|nature\.com|frontiersin|pubmed|nih\.gov|national institutes of health|sloanreview\.mit\.edu|rework\.withgoogle\.com/.test(p + ' ' + u);
 }
 
 function appendReferences_(sheet, refs) {
