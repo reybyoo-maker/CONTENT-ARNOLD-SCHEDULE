@@ -45,7 +45,7 @@ Jangan taruh key di kode atau log. Model default adalah **gemini-3.5-flash-lite*
 2. Pilih **Weekly Arnold Content Planner**.
 3. Klik **Run workflow**.
 4. Untuk kalender pertama, isi start_date dengan **2026-10-21**.
-5. Buka spreadsheet dan periksa kedua tab.
+5. Buka spreadsheet dan periksa tiga tab: Content Calendar, Reference Library, dan Creator Examples.
 
 Jika tanggal itu sudah lewat saat setup dilakukan, masukkan tanggal mulai yang kamu inginkan. Tanggal yang sudah ada tidak akan ditambahkan ulang.
 
@@ -56,6 +56,8 @@ Workflow terjadwal setiap Rabu pukul **07.10 WIB** (00:10 UTC) dan membuat kalen
 Workflow menggunakan Google News RSS untuk mencari materi dari penerbit profesional, termasuk Harvard Business Review, Gallup, MIT Sloan Management Review, Center for Creative Leadership, SHRM, McKinsey, Atlassian, dan sumber relevan lain. Artikel ditemukan lebih dulu; Gemini hanya boleh menggunakan ID referensi yang diberikan. Jika sumber terlalu sedikit atau API gagal, workflow berhenti dengan error daripada membuat URL atau data palsu.
 
 Kalender berisi tanggal, hari, jam WIB, jumlah per hari, format, pilar, topik, hook cover, outline/production plan, caption, CTA, hashtag, referensi riset 1 dan 2 beserta URL/ringkasan, satu contoh konten publik dari pihak lain beserta URL dan cara mengadaptasi formatnya, original angle, catatan fact-check, status, dan waktu pembuatan. Setiap post berstatus **DRAFT — REVIEW BEFORE POSTING**; review klaim dan caption sebelum menerbitkan.
+
+**Creator Examples** berisi contoh konten publik yang sudah dikurasi, termasuk post LinkedIn Harvard Business Review dan artikel leadership lain, dengan URL langsung serta catatan apa yang bisa dipelajari dari formatnya. Contoh ini adalah referensi format, bukan otomatis bahan bukti faktual dan tidak diperbarui setiap minggu. Referensi riset di Content Calendar dan Reference Library diperbarui dari hasil pencarian publik setiap kali workflow berjalan.
 
 ## Troubleshooting
 - **Permission denied:** bagikan Google Sheet ke client_email sebagai Editor.
