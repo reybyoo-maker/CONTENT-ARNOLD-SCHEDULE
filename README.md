@@ -6,6 +6,7 @@ Automation ini berjalan langsung dari Google Sheets. Yang diperlukan hanya **Gem
 - Membuat **1–3 post per hari**, pada jam yang berbeda.
 - Frekuensi format diatur otomatis: **tepat 1 Reels per kalender 7 hari**. Semua slot lain hanya Carousel atau Feed single-image.
 - Draft diminta ke Gemini dalam **batch maksimal 3 konten**, supaya output tidak terlalu panjang. Jika jumlah post kurang atau output gagal, script mencoba ulang batch; jika masih gagal, script memecahnya menjadi permintaan satu konten. Seluruh jumlah post dicek sebelum menulis kalender.
+- Struktur output diperiksa per batch. Jika ID contoh konten tidak cocok dengan format slot, script menggantinya dengan contoh eksternal yang sesuai; field slide Carousel dikosongkan otomatis untuk format Reels/Feed; Carousel yang tidak memiliki tepat 7 slide akan diminta ulang, lalu dipecah menjadi permintaan individual bila perlu.
 - Slot jam WIB dipilih dari 09.00, 12.15, 15.30, 18.45, dan 20.30.
 - Jumlah dan jam per tanggal stabil ketika dijalankan ulang; format yang terjadwal juga deterministik, sehingga satu minggu tidak mendapat lebih dari satu Reels.
 - Kalender awal dimulai 21 Oktober 2026.
