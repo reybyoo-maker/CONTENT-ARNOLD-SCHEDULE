@@ -1,0 +1,27 @@
+name: Validate Apps Script Syntax
+
+on:
+  push:
+    paths:
+      - "apps-script/**"
+      - ".github/workflows/validate-apps-script.yml"
+  pull_request:
+    paths:
+      - "apps-script/**"
+      - ".github/workflows/validate-apps-script.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  syntax-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Validate JavaScript syntax
+        run: node --check apps-script/Code.gs
