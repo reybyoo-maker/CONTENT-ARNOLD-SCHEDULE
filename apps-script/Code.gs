@@ -89,6 +89,7 @@ function setupArnoldAutomation() {
   if (!props.getProperty(CFG.NEXT_DATE_PROP)) props.setProperty(CFG.NEXT_DATE_PROP, CFG.INITIAL_DATE);
 
   ensureSheets_(ss);
+  purgeOwnerReferences_(ss.getSheetByName(CFG.RESEARCH));
   populateExamples_(ss);
   createWeeklyTrigger_();
   ui.alert('Setup selesai. Sheet tabs dan trigger mingguan sudah dibuat. Pilih Arnold Content Planner → Generate first week untuk membuat kalender awal.');
@@ -576,18 +577,19 @@ function isTrustedReference_(publisher, url, query) {
   return /harvard business review|hbr\.org|gallup|mit sloan|sloan management review|center for creative leadership|\bccl\b|shrm|mckinsey|atlassian|american psychological association|\bapa\b|greater good|berkeley|cipd|chartered institute of personnel|ddi|google rework|deloitte|stanford|harvard business school|\bhbs\b|world economic forum|weforum|nature\.com|frontiersin|pubmed|nih\.gov|national institutes of health|sloanreview\.mit\.edu|rework\.withgoogle\.com|ted\.com/.test(p + ' ' + u);
 }
 
-function appendReferences_(sheet, refs) {
-  // Purge owner/profile references left by earlier versions before adding independent sources.
-  const before = sheet.getLastRow();
-  if (before > 1) {
-    const previous = sheet.getRange(2,1,before-1,REF_HEADERS.length).getDisplayValues();
-    for (let i = previous.length - 1; i >= 0; i--) {
-      const searchText = [previous[i][1], previous[i][2], previous[i][4], previous[i][6]].join(' ').toLowerCase();
-      if (/arnold\s+priadi\s+bolang|linkedin\.com\/(?:in|posts)\/arnold-priadi-bolang/.test(searchText)) {
-        sheet.deleteRow(i + 2);
-      }
+function purgeOwnerReferences_(sheet) {
+  if (!sheet || sheet.getLastRow() <= 1) return;
+  const previous = sheet.getRange(2,1,sheet.getLastRow()-1,REF_HEADERS.length).getDisplayValues();
+  for (let i = previous.length - 1; i >= 0; i--) {
+    const searchText = [previous[i][1], previous[i][2], previous[i][4], previous[i][6]].join(' ').toLowerCase();
+    if (/arnold\s+priadi\s+bolang|linkedin\.com\/(?:in|posts)\/arnold-priadi-bolang/.test(searchText)) {
+      sheet.deleteRow(i + 2);
     }
   }
+}
+
+function appendReferences_(sheet, refs) {
+  purgeOwnerReferences_(sheet);
   const last = sheet.getLastRow();
   const currentUrls = last > 1 ? sheet.getRange(2,5,last-1,1).getDisplayValues().flat() : [];
   const known = {};
