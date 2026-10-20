@@ -314,6 +314,7 @@ function generatePostsBatch_(slots, refs) {
     'Required post fields: topic, pillar, hook, production_plan, carousel_slides, caption, cta, hashtags (array of 3–5), reference_ids (array of 1–2 valid R IDs), example_id, example_format_match, example_adaptation, original_angle, case_type, case_or_field_scenario, case_source_id (R ID or AB ID for documented cases, otherwise empty string), fact_check_notes.',
     'The research reference should support factual claims. A first-party Arnold post may be selected as case_source_id when the post refers specifically to a public example from Arnold. Do not imply that an external creator’s post is evidence of Arnold’s experience.',
     'Every schedule slot includes allowed_creator_examples filtered to the same format. Select example_id only from that list, and set example_format_match to the selected example’s exact format_match metadata.',
+    'The full seven-day calendar has exactly one Reels slot. This request contains only a subset of that calendar: do not change or reassign the supplied format, and do not assume that this subset must contain a Reels slot.',
     'A Reels reference must open a video, a Carousel reference must explicitly be a carousel, and a Feed reference must be a single-image/static feed post. Do not substitute articles, profiles, or unverified-format posts.',
     'Source links are references to verify, not permission to copy. Create original explanations, examples, and slide sentences.'
   ].join('\n');
@@ -350,7 +351,7 @@ function generatePostsBatch_(slots, refs) {
       'Use a reputable supplied R research reference for each post and choose the example_id only from that slot’s allowed_creator_examples.',
       'For the selected example, output example_format_match and make it exactly equal to the slot format family.',
       'Reels must use a direct video example, Carousel must use an identified carousel, Feed must use a static/single-image post. Do not use an article, profile or unverified-format post as a content format reference.',
-      'Exactly one schedule slot in this seven-day batch is Reels. All remaining slots are Carousel or Feed.',
+      'The full seven-day calendar contains exactly one Reels slot, but this API request may contain only a subset. Do not change the specific format on any supplied slot. Do not force a Reels post into a subset with no Reels slot.',
       'At least 80% of topics must be leadership/people management/workplace practice. Prefer zero AI-related posts; do not make AI the topic of any post in this batch.',
       'Use documented cases only when source-backed; otherwise label the scenario as illustrative.',
       'Avoid repeating the same topic or hook. No fake statistics, testimonials or invented Arnold experiences.',
