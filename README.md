@@ -5,6 +5,7 @@ Automation ini berjalan langsung dari Google Sheets. Yang diperlukan hanya **Gem
 ## Fitur
 - Membuat **1–3 post per hari**, pada jam yang berbeda.
 - Frekuensi format diatur otomatis: **tepat 1 Reels per kalender 7 hari**. Semua slot lain hanya Carousel atau Feed single-image.
+- Draft diminta ke Gemini dalam **batch maksimal 3 konten**, supaya output tidak terlalu panjang. Jika jumlah post kurang atau output gagal, script mencoba ulang batch; jika masih gagal, script memecahnya menjadi permintaan satu konten. Seluruh jumlah post dicek sebelum menulis kalender.
 - Slot jam WIB dipilih dari 09.00, 12.15, 15.30, 18.45, dan 20.30.
 - Jumlah dan jam per tanggal stabil ketika dijalankan ulang; format yang terjadwal juga deterministik, sehingga satu minggu tidak mendapat lebih dari satu Reels.
 - Kalender awal dimulai 21 Oktober 2026.
@@ -53,6 +54,7 @@ Repository ini hanya menyimpan salinan source code dan dokumentasi. Eksekusi oto
 ## Troubleshooting
 - **API key kosong:** jalankan Setup dari menu Arnold Content Planner.
 - **HTTP 400/403/429:** cek API key, model yang tersedia, dan kuota di AI Studio.
+- **Jumlah output Gemini kurang:** versi terbaru mencoba ulang, lalu mengirim slot satu per satu jika perlu. Kalau masih gagal, periksa Apps Script → Executions dan kuota API Gemini.
 - **Sumber kurang:** coba lagi nanti; script sengaja tidak membuat referensi palsu.
 - **Header berbeda:** gunakan spreadsheet baru yang kosong atau ubah nama tab lama. Script tidak menghapus data lama otomatis.
 - Lihat **Apps Script → Executions** untuk detail error.
