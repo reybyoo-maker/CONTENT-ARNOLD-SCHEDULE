@@ -42,28 +42,32 @@ const CAL_HEADERS = [
   'Research Ref 2 Title','Research Ref 2 Publisher','Research Ref 2 Date','Research Ref 2 URL','Research Ref 2 Summary',
   'Creator Example Title','Creator / Publisher','Platform','Creator Example URL','How to Adapt the Example',
   'Original Angle (Not a Copy)','Fact-check Notes','Status','Generated At (WIB)',
-  'Workplace Scenario / Case (with source status)','Carousel Slide Copy (per slide)'
+  'Workplace Scenario / Case (with source status)','Carousel Slide Copy (per slide)','Creator Example Format Match'
 ];
 const REF_HEADERS = ['Reference ID','Article Title','Publisher','Published Date','Article URL','Summary / Snippet','Search Query','Retrieved At (WIB)'];
-const EXAMPLE_HEADERS = ['Example ID','Content Title','Creator / Publisher','Platform','Content URL','Topic','What to Study','Added At (WIB)'];
+const EXAMPLE_HEADERS = ['Example ID','Content Title','Creator / Publisher','Platform','Content URL','Topic','What to Study','Added At (WIB)','Best Format Match'];
 
 // Public example links checked before being added. Learn the format; do not copy the content.
+// Reference type is explicit. Only format-verified examples can be assigned to a draft of that type.
 const EXAMPLES = [
-  // First-party sources define Arnold's real public positioning and existing content themes.
-  {id:'AB01',title:'Professional profile — Coach, Facilitator and Trainer',creator:'Arnold Priadi Bolang (first-party profile)',platform:'LinkedIn profile',url:'https://id.linkedin.com/in/arnold-priadi-bolang-70252a6b',topic:'Leadership development, personal growth, creative communication, adaptive transformation',lesson:'PRIMARY PERSONAL-BRAND SOURCE. Align the niche with leadership development, personal growth, communication, and teams. Do not invent credentials, clients, results or biographical details.'},
-  {id:'AB02',title:'Managing Change with Emotional Intelligence at Quipper',creator:'Arnold Priadi Bolang (first-party public post)',platform:'LinkedIn post',url:'https://www.linkedin.com/posts/arnold-priadi-bolang-70252a6b_manajemenperubahan-kecerdasanemosional-activity-7306144835407597568-nuA7',topic:'Change management, emotional intelligence, manager development, workplace training',lesson:'PUBLIC FIELD EXAMPLE. The post describes a two-day session for Quipper managers about managing change and emotional intelligence. Do not claim confidential details or unreported outcomes.'},
-  {id:'AB03',title:'From Executor to Planner — Supervisor Refreshment with United Tractors',creator:'Arnold Priadi Bolang (first-party public post)',platform:'LinkedIn post',url:'https://www.linkedin.com/posts/arnold-priadi-bolang-70252a6b_peopledevelopment-leadership-pdca-activity-7341061749959233536-Svqx',topic:'Supervisor development, PDCA, from executor to planner, team management',lesson:'PUBLIC FIELD EXAMPLE. The post describes supervisor development and using PDCA. Use only details actually disclosed in the source; never invent participant results.'},
-  {id:'AB04',title:'Empat Tipe Orang di Dalam Tim',creator:'Arnold Priadi Bolang (first-party public post)',platform:'LinkedIn post',url:'https://www.linkedin.com/posts/arnold-priadi-bolang-70252a6b_empat-tipe-orang-di-dalam-tim-activity-7165911292552134656-SQ3I',topic:'Team composition, behavior, leadership and team development',lesson:'Study an existing public theme to understand audience fit. Develop a new angle; do not repeat the same framework or assert performance figures without rechecking the original post.'},
-  {id:'AB05',title:'Leading Innovation for Sustainable Business Growth at NEXA',creator:'Arnold Priadi Bolang (first-party public post)',platform:'LinkedIn post',url:'https://www.linkedin.com/posts/arnold-priadi-bolang-70252a6b_training-leadership-business-activity-7166235153613176832-Fh2G',topic:'Leadership, innovation, defining direction, sustainable growth',lesson:'Publicly described a training session at NEXA. Treat it as first-party context only; do not invent business outcomes or confidential client details.'},
+  {id:'AB01',title:'Professional profile — Coach, Facilitator and Trainer',creator:'Arnold Priadi Bolang (first-party profile)',platform:'LinkedIn profile',url:'https://id.linkedin.com/in/arnold-priadi-bolang-70252a6b',topic:'Leadership development, personal growth, creative communication, adaptive transformation',formatMatch:'Brand source only — not a format example',lesson:'PRIMARY PERSONAL-BRAND SOURCE. Align topics with Arnold’s public positioning. Do not invent credentials, clients, results or biographical details.'},
+  {id:'AB02',title:'Managing Change with Emotional Intelligence at Quipper',creator:'Arnold Priadi Bolang (first-party public post)',platform:'LinkedIn feed post with image',url:'https://www.linkedin.com/posts/arnold-priadi-bolang-70252a6b_manajemenperubahan-kecerdasanemosional-activity-7306144835407597568-nuA7',topic:'Change management, emotional intelligence, manager development, workplace training',formatMatch:'Feed (single image)',lesson:'PUBLIC FIELD SOURCE. The public post describes a two-day training for Quipper managers. Use only disclosed information; do not invent results or confidential details.'},
+  {id:'AB03',title:'From Executor to Planner — Supervisor Refreshment with United Tractors',creator:'Arnold Priadi Bolang (first-party public post)',platform:'LinkedIn feed post with image',url:'https://www.linkedin.com/posts/arnold-priadi-bolang-70252a6b_peopledevelopment-leadership-pdca-activity-7341061749959233536-Svqx',topic:'Supervisor development, PDCA, from executor to planner, team management',formatMatch:'Feed (single image)',lesson:'PUBLIC FIELD SOURCE. The post describes a supervisor development session involving PDCA. Do not invent participant outcomes or client details.'},
+  {id:'AB04',title:'Empat Tipe Orang di Dalam Tim — public post discussing an Instagram Reel',creator:'Arnold Priadi Bolang (first-party public post)',platform:'LinkedIn post mentioning Instagram Reels',url:'https://www.linkedin.com/posts/arnold-priadi-bolang-70252a6b_empat-tipe-orang-di-dalam-tim-activity-7165911292552134656-SQ3I',topic:'Team composition, behavior, leadership and team development',formatMatch:'Brand source only — not a direct video link',lesson:'Useful for brand and topic context only. The link opens a LinkedIn post that mentions an Instagram Reel, not the original Reel video, so do not use it as a format-matched video example.'},
+  {id:'AB05',title:'Leading Innovation for Sustainable Business Growth at NEXA',creator:'Arnold Priadi Bolang (first-party public post)',platform:'LinkedIn feed post with image',url:'https://www.linkedin.com/posts/arnold-priadi-bolang-70252a6b_training-leadership-business-activity-7166235153613176832-Fh2G',topic:'Leadership, innovation, defining direction, sustainable growth',formatMatch:'Feed (single image)',lesson:'PUBLIC FIELD SOURCE. The post describes a training session at NEXA. Use it for brand context without inventing business outcomes.'},
 
-  // External examples are for format study only; never copy wording or structure verbatim.
-  {id:'CE01',title:'A Smarter Way to Delegate: What to Keep vs. What to Hand Off',creator:'Harvard Business Review',platform:'LinkedIn post',url:'https://www.linkedin.com/posts/harvard-business-review_a-smarter-way-to-delegate-what-to-keep-vs-activity-7377051137730056192-bHE0',topic:'Delegation, task ownership, leadership',lesson:'Notice the direct promise and practical contrast; make a new Indonesian workplace angle.'},
-  {id:'CE02',title:'Research on Delegating Shows How Uncomfortable We Are Making Choices for Others',creator:'Harvard Business Review',platform:'LinkedIn post',url:'https://www.linkedin.com/posts/harvard-business-review_research-on-delegating-shows-how-uncomfortable-activity-7441976077155008512-M3Y5',topic:'Delegation, decision ownership, trust',lesson:'Study how a research idea is framed as a concise professional question. Verify claims against the primary source.'},
-  {id:'CE03',title:'How to Tell If You’re Delegating Too Much — and What to Do About It',creator:'Harvard Business Review',platform:'LinkedIn post',url:'https://www.linkedin.com/posts/harvard-business-review_how-to-tell-if-youre-delegating-too-much-activity-7404573157266980864-uza9',topic:'Delegation, management, communication',lesson:'Study the diagnostic structure: recognizable symptoms followed by corrective direction. Do not reuse the title.'},
-  {id:'CE04',title:'As Your Team Gets Bigger, Your Leadership Style Has to Adapt',creator:'Harvard Business Review',platform:'LinkedIn post',url:'https://www.linkedin.com/posts/harvard-business-review_as-your-team-gets-bigger-your-leadership-activity-7194834344987742208-dQO2',topic:'Team growth, manager effectiveness, leadership',lesson:'Study the link between a familiar situation and a leadership implication; develop a different example.'},
-  {id:'CE05',title:'How to Delegate',creator:'Harvard Business Review',platform:'HBR podcast / article',url:'https://hbr.org/podcast/2023/09/how-to-delegate',topic:'Delegation, clarity, expectations',lesson:'Use the expert discussion to inform a useful explanation, then develop an original practical framework.'},
-  {id:'CE06',title:'One Simple Leadership Skill Nobody Teaches (But Everyone Needs)',creator:'Simon Sinek',platform:'Publisher article',url:'https://simonsinek.com/stories/one-simple-leadership-skill-nobody-teaches',topic:'Leadership, curiosity, communication',lesson:'Study how a common professional frustration opens a story; do not imitate the author’s voice.'}
-];;
+  {id:'CE01',title:'A Smarter Way to Delegate: What to Keep vs. What to Hand Off',creator:'Harvard Business Review',platform:'LinkedIn post',url:'https://www.linkedin.com/posts/harvard-business-review_a-smarter-way-to-delegate-what-to-keep-vs-activity-7377051137730056192-bHE0',topic:'Delegation, task ownership, leadership',formatMatch:'General reference only — format not verified',lesson:'Useful for understanding the delegation topic; not selected as a format example because the visual format has not been independently verified.'},
+  {id:'CE02',title:'Research on Delegating Shows How Uncomfortable We Are Making Choices for Others',creator:'Harvard Business Review',platform:'LinkedIn post',url:'https://www.linkedin.com/posts/harvard-business-review_research-on-delegating-shows-how-uncomfortable-activity-7441976077155008512-M3Y5',topic:'Delegation, decision ownership, trust',formatMatch:'General reference only — format not verified',lesson:'Use the idea only after reviewing the linked primary research; not selected as a format example.'},
+  {id:'CE03',title:'How to Tell If You’re Delegating Too Much — and What to Do About It',creator:'Harvard Business Review',platform:'LinkedIn post',url:'https://www.linkedin.com/posts/harvard-business-review_how-to-tell-if-youre-delegating-too-much-activity-7404573157266980864-uza9',topic:'Delegation, management, communication',formatMatch:'General reference only — format not verified',lesson:'Useful for topic discovery; not selected as a format example because the visual format has not been verified.'},
+  {id:'CE04',title:'As Your Team Gets Bigger, Your Leadership Style Has to Adapt',creator:'Harvard Business Review',platform:'LinkedIn post',url:'https://www.linkedin.com/posts/harvard-business-review_as-your-team-gets-bigger-your-leadership-activity-7194834344987742208-dQO2',topic:'Team growth, manager effectiveness, leadership',formatMatch:'General reference only — format not verified',lesson:'Useful for topic discovery; do not treat it as format inspiration unless the actual content format is verified.'},
+  {id:'CE05',title:'How to Delegate',creator:'Harvard Business Review',platform:'Podcast / article',url:'https://hbr.org/podcast/2023/09/how-to-delegate',topic:'Delegation, clarity, expectations',formatMatch:'General reference only — audio/article',lesson:'Use expert ideas as background after reviewing the source; this is not a matched Instagram post-format example.'},
+  {id:'CE06',title:'One Simple Leadership Skill Nobody Teaches (But Everyone Needs)',creator:'Simon Sinek',platform:'Publisher article',url:'https://simonsinek.com/stories/one-simple-leadership-skill-nobody-teaches',topic:'Leadership, curiosity, communication',formatMatch:'General reference only — article',lesson:'Use for topic context only, not as a visual-format example.'},
+  {id:'CE07',title:'How Great Leaders Inspire Action',creator:'TED / Simon Sinek',platform:'YouTube video',url:'https://www.youtube.com/watch?v=qp0HIF3SfI4',topic:'Leadership purpose, communication, inspiring action',formatMatch:'Reels / Video',lesson:'Actual leadership video reference. Study spoken delivery, opening and narrative structure; create an original 25–40-second Reel. This source is long-form video, not an Instagram Reel.'},
+  {id:'CE08',title:'Why Good Leaders Make You Feel Safe',creator:'TED / Simon Sinek',platform:'YouTube video',url:'https://www.youtube.com/watch?v=lmyZMtPVodo',topic:'Leadership trust, psychological safety, team culture',formatMatch:'Reels / Video',lesson:'Actual leadership video reference. Study visual and speaking structure, then adapt one distinct idea into an original short-form video. This source is long-form video, not an Instagram Reel.'},
+  {id:'CE09',title:'4 Ways to Delegate and Build Future Leaders',creator:'Dhiraj Baadkar',platform:'LinkedIn carousel',url:'https://www.linkedin.com/posts/dhiraj-baadkar-lifeandrelationshipcoach_4-practical-ways-to-delegate-activity-7472872931010875392-RjHl',topic:'Delegation, ownership, building future leaders',formatMatch:'Carousel',lesson:'The publisher explicitly describes this post as a carousel. Study slide progression and practical framing; write original slide copy.'},
+  {id:'CE10',title:'Leadership, Delegation and Accountability — Five Questions',creator:'Jeff Hancher',platform:'LinkedIn carousel',url:'https://www.linkedin.com/posts/jeff-hancher_leadership-delegation-accountability-activity-7498344771346886656-0os7',topic:'Delegation, accountability, clarifying expectations',formatMatch:'Carousel',lesson:'The publisher explicitly describes this post as a carousel. Study its question-driven sequence; never copy the text.'}
+];
+
 
 function onOpen() {
   SpreadsheetApp.getUi().createMenu('Arnold Content Planner')
@@ -125,6 +129,8 @@ function generateWeek_(startIso) {
   ensureSheets_(ss);
   populateExamples_(ss);
   const slots = buildSchedule_(startIso);
+  const reelCount = slots.filter(function (slot) { return slot.format === 'Reels'; }).length;
+  if (reelCount !== 1) throw new Error('Each seven-day calendar must contain exactly one Reels post; found ' + reelCount + '.');
   const calendar = ss.getSheetByName(CFG.CALENDAR);
   const existing = existingSlotKeys_(calendar);
   const pending = slots.filter(function (s) { return !existing.has(s.date + '|' + s.time); });
@@ -150,7 +156,10 @@ function generateWeek_(startIso) {
     const ids = Array.isArray(post.reference_ids) ? post.reference_ids : [post.reference_ids];
     const chosen = ids.map(function (id) { return sourceMap[String(id || '').trim()]; }).filter(Boolean).slice(0, 2);
     if (!chosen.length) throw new Error('Post ' + (index + 1) + ' has no valid public research reference.');
-    const example = exampleMap[String(post.example_id || '').trim()] || chooseExample_(String(post.topic || '') + ' ' + String(post.hook || ''));
+    const example = exampleMap[String(post.example_id || '').trim()];
+    if (!example || !exampleSupportsFormat_(example, slot.format)) {
+      throw new Error('Post ' + (index + 1) + ' selected a content reference that does not match ' + slot.format + '. No calendar rows were written.');
+    }
     const tagList = Array.isArray(post.hashtags) ? post.hashtags : String(post.hashtags || '').split(/\s+/);
     const tags = tagList.map(function (t) { return String(t || '').trim(); }).filter(Boolean).slice(0, 5)
       .map(function (t) { return t.charAt(0) === '#' ? t : '#' + t.replace(/^#+/, ''); }).join(' ');
@@ -173,7 +182,7 @@ function generateWeek_(startIso) {
       r2.title || '', r2.publisher || '', r2.publishedDate || '', r2.url || '', r2.summary || '',
       example.title, example.creator, example.platform, example.url, String(post.example_adaptation || example.lesson),
       String(post.original_angle || ''), String(post.fact_check_notes || ''),
-      'DRAFT — REVIEW BEFORE POSTING', now, caseNotes, formatCarouselSlides_(post, slot.format)
+      'DRAFT — REVIEW BEFORE POSTING', now, caseNotes, formatCarouselSlides_(post, slot.format), example.formatMatch
     ]);
   });
 
@@ -194,10 +203,18 @@ function buildSchedule_(startIso) {
     const rng = seededRandom_(Number(iso.replace(/-/g, '')));
     const count = 1 + Math.floor(rng() * 3);
     const times = shuffle_(CFG.TIMES.slice(), rng).slice(0, count).sort();
-    const formats = shuffle_(CFG.FORMATS.slice(), rng).slice(0, count);
     times.forEach(function (time, index) {
-      slots.push({date: iso, day: weekdays[day.getUTCDay()], time: time, format: formats[index], dailyCount: count, postNumber: index + 1});
+      // Reels is assigned once per whole week below; individual days only use Carousel/Feed here.
+      const format = rng() < 0.55 ? 'Carousel' : 'Feed (single image)';
+      slots.push({date: iso, day: weekdays[day.getUTCDay()], time: time, format: format, dailyCount: count, postNumber: index + 1});
     });
+  }
+  if (!slots.length) throw new Error('No schedule slots could be created for ' + startIso + '.');
+  const weeklyRng = seededRandom_(Number(String(startIso).replace(/-/g, '')) ^ 0x5A17C0DE);
+  const reelIndex = Math.floor(weeklyRng() * slots.length);
+  slots[reelIndex].format = 'Reels';
+  if (slots.filter(function (slot) { return slot.format === 'Reels'; }).length !== 1) {
+    throw new Error('The weekly schedule must contain exactly one Reels slot.');
   }
   return slots;
 }
@@ -227,7 +244,7 @@ function generatePosts_(slots, refs) {
     return {id: 'R' + (i + 1), title: r.title, publisher: r.publisher, published_date: r.publishedDate, url: r.url, summary: String(r.summary || '').slice(0, 800)};
   });
   const examples = EXAMPLES.map(function (e) {
-    return {id:e.id,title:e.title,creator:e.creator,platform:e.platform,url:e.url,topic:e.topic,lesson:e.lesson};
+    return {id:e.id,title:e.title,creator:e.creator,platform:e.platform,url:e.url,topic:e.topic,lesson:e.lesson,format_match:e.formatMatch};
   });
   const system = [
     'You are the Indonesian editorial strategist for Arnold Priadi Bolang, a coach, facilitator and trainer. Build content aligned with his real, public professional positioning, not a generic influencer brand.',
@@ -235,7 +252,7 @@ function generatePosts_(slots, refs) {
     'EDITORIAL PRIORITY: at least 80% of posts must directly concern leadership, people management, teams or real workplace practice. AI/tool content is optional and limited to at most ONE post per 7-day batch; do not force AI into unrelated topics.',
     'Use Arnold personal-brand sources to understand publicly visible themes and real public field examples. Use public client/training context only when the supplied source explicitly supports it. Never invent Arnold’s experiences, clients, quotes, credentials, results or private details.',
     'Research must be reputable and linkable. Use only supplied research references and supplied public examples. Never invent URLs, publishers, dates, statistics, study results, quotations, testimonials or case-study facts. If a reference snippet is weak, avoid a specific factual claim and flag what must be checked in the full source.',
-    'Every post must have 1–2 valid research reference IDs, exactly one supplied example_id, a clear original Indonesian angle, and a workplace scenario or case. No fake numbers or fabricated named companies.',
+    'Every post must have 1–2 valid research reference IDs and exactly one supplied example_id from that specific slot’s allowed_creator_examples. The example format must exactly match the slot format. Never choose a general/article/profile reference as a content-format example.',
     'Every hook / cover text must be exactly 4–9 words, counted as words separated by spaces. This is a hard rule for Reels, Carousel and Feed. Avoid long explanatory hooks.',
     'For every post, choose case_type: documented_case only when supplied public references support the specific case and provide a valid case_source_id (R1... or AB01...); otherwise use illustrative_scenario and clearly present it as an example/simulation, not a true event.',
     'For Carousel posts, output exactly 7 carousel_slides objects. Each object has slide_number (1–7), role, slide_text, visual_direction. These must be READY-TO-USE on-slide sentences, not an outline or labels such as “explain the problem”. Slide 1 role is cover and its slide_text must exactly equal hook. Slides 2–6 each contain 1–2 concise, concrete sentences. Slide 7 role is CTA and contains a useful, natural call to action. Use the roles: cover, situation_lapangan, kesalahan_umum, analisis, respons_pemimpin, contoh_penerapan, CTA. Include a short visual direction per slide.',
@@ -245,13 +262,26 @@ function generatePosts_(slots, refs) {
     'Caption: Bahasa Indonesia, about 80–150 words, useful professional tone, clear insight, practical step and natural CTA. Avoid fake first-person anecdotes from Arnold.',
     'Pillars should fit: Leadership in Practice, Manager Toolkit, Team Performance, Delegation & Accountability, Communication & Emotional Intelligence, Workplace Case, Arnold Public Field Insight, or Professional Productivity. Do not use AI as a pillar unless the post genuinely requires it.',
     'Return valid JSON only: {"posts":[...]} with exactly one post per supplied slot, in the same order. There can be 7–21 posts.',
-    'Required post fields: topic, pillar, hook, production_plan, carousel_slides, caption, cta, hashtags (array of 3–5), reference_ids (array of 1–2 valid R IDs), example_id, example_adaptation, original_angle, case_type, case_or_field_scenario, case_source_id (R ID or AB ID for documented cases, otherwise empty string), fact_check_notes.',
+    'Required post fields: topic, pillar, hook, production_plan, carousel_slides, caption, cta, hashtags (array of 3–5), reference_ids (array of 1–2 valid R IDs), example_id, example_format_match, example_adaptation, original_angle, case_type, case_or_field_scenario, case_source_id (R ID or AB ID for documented cases, otherwise empty string), fact_check_notes.',
     'The research reference should support factual claims. A first-party Arnold post may be selected as case_source_id when the post refers specifically to a public example from Arnold. Do not imply that an external creator’s post is evidence of Arnold’s experience.',
+    'Every schedule slot includes allowed_creator_examples filtered to the same format. Select example_id only from that list, and repeat its content format in the output field example_format_match.',
+    'A Reels reference must open a video, a Carousel reference must explicitly be a carousel, and a Feed reference must be a single-image/static feed post. Do not substitute articles, profiles, or unverified-format posts.',
     'Source links are references to verify, not permission to copy. Create original explanations, examples, and slide sentences.'
   ].join('\n');
   const prompt = {
     niche: 'Arnold Priadi Bolang — coach, facilitator and trainer; practical leadership and people development',
-    schedule_slots: slots,
+    schedule_slots: slots.map(function (slot) {
+      return {
+        date: slot.date, day: slot.day, time: slot.time, format: slot.format,
+        dailyCount: slot.dailyCount, postNumber: slot.postNumber,
+        allowed_creator_examples: examples.filter(function (example) {
+          return exampleSupportsFormat_(example, slot.format);
+        }).map(function (example) {
+          return {id:example.id,title:example.title,creator:example.creator,platform:example.platform,url:example.url,
+            format_match:example.format_match,topic:example.topic,lesson:example.lesson};
+        })
+      };
+    }),
     editorial_priorities: {
       min_share_leadership_people_management_and_workplace_practice: '80%',
       ai_related_posts: '0 or 1 post per 7-day batch; optional, never forced',
@@ -259,15 +289,19 @@ function generatePosts_(slots, refs) {
       otherwise: 'Use a clearly labelled illustrative workplace scenario, never present it as a true client story',
       field_focus: 'Manager and supervisor decisions, team friction, feedback conversations, delegation, accountability, performance, change and communication'
     },
-    arnold_personal_brand_sources: examples.filter(function (e) { return e.id.indexOf('AB') === 0; }),
-    external_creator_content_examples: examples.filter(function (e) { return e.id.indexOf('CE') === 0; }),
+    arnold_personal_brand_sources: examples.filter(function (e) { return e.id.indexOf('AB') === 0; }).map(function (e) {
+      return {id:e.id,title:e.title,url:e.url,topic:e.topic,lesson:e.lesson};
+    }),
     public_research_references: sources,
     instructions: [
       'Return exactly one original post for every slot in the exact order.',
       'Do not change date, time, format or slot number.',
       'Every hook must be exactly 4–9 words.',
       'For Carousel, deliver seven fully written slides, not just an outline; each slide needs actual on-slide copy.',
-      'Use a reputable supplied R research reference for each post and choose one supplied AB/CE example ID.',
+      'Use a reputable supplied R research reference for each post and choose the example_id only from that slot’s allowed_creator_examples.',
+      'For the selected example, output example_format_match and make it exactly equal to the slot format family.',
+      'Reels must use a direct video example, Carousel must use an identified carousel, Feed must use a static/single-image post. Do not use an article, profile or unverified-format post as a content format reference.',
+      'Exactly one schedule slot in this seven-day batch is Reels. All remaining slots are Carousel or Feed.',
       'At least 80% of topics must be leadership/people management/workplace practice; AI is optional and limited to at most one post in this week.',
       'Use documented cases only when source-backed; otherwise label the scenario as illustrative.',
       'Avoid repeating the same topic or hook. No fake statistics, testimonials or invented Arnold experiences.',
@@ -366,6 +400,15 @@ function repairGeminiJson_(endpoint, apiKey, invalidText, originalError) {
   }
 }
 
+function exampleSupportsFormat_(example, format) {
+  if (!example) return false;
+  const match = String(example.formatMatch || example.format_match || '').trim();
+  if (format === 'Reels') return match === 'Reels / Video';
+  if (format === 'Carousel') return match === 'Carousel';
+  if (format === 'Feed (single image)') return match === 'Feed (single image)';
+  return false;
+}
+
 function countWords_(text) {
   const value = String(text || '').trim();
   return value ? value.split(/\s+/).filter(Boolean).length : 0;
@@ -386,7 +429,16 @@ function validateDraftPosts_(posts, slots, sourceMap, exampleMap) {
       errors.push(label + ': no valid public research reference ID.');
     }
     const exampleId = String(post.example_id || '').trim();
-    if (!exampleMap[exampleId]) errors.push(label + ': missing or invalid example_id.');
+    const chosenExample = exampleMap[exampleId];
+    if (!chosenExample) {
+      errors.push(label + ': missing or invalid example_id.');
+    } else if (!exampleSupportsFormat_(chosenExample, slot.format)) {
+      errors.push(label + ': example_id ' + exampleId + ' is not a verified reference for ' + slot.format + '.');
+    }
+    if (String(post.example_format_match || '').trim() !== slot.format) {
+      // Format family labels are standardized for validation, not inferred from the chosen reference.
+      errors.push(label + ': example_format_match must exactly equal the planned slot format "' + slot.format + '".');
+    }
     const caseType = String(post.case_type || '').trim();
     const caseSourceId = String(post.case_source_id || '').trim();
     const caseSource = sourceMap[caseSourceId] || exampleMap[caseSourceId];
@@ -556,9 +608,9 @@ function styleSheet_(sheet) {
   sheet.getRange(1,1,1,cols).setBackground('#07162f').setFontColor('#ffffff').setFontWeight('bold').setWrap(true).setVerticalAlignment('middle');
   if (sheet.getLastRow()>1) sheet.getRange(2,1,sheet.getLastRow()-1,cols).setWrap(true).setVerticalAlignment('top');
   const widths = {
-    'Content Calendar':[105,85,170,125,150,155,240,280,380,460,220,190,300,180,120,350,420,300,180,120,350,420,310,190,160,360,340,320,320,210,175,390,500],
+    'Content Calendar':[105,85,170,125,150,155,240,280,380,460,220,190,300,180,120,350,420,300,180,120,350,420,310,190,160,360,340,320,320,210,175,390,500,245],
     'Reference Library':[105,320,200,120,390,450,300,175],
-    'Creator Examples':[110,340,230,190,420,280,420,175]
+    'Creator Examples':[110,340,230,190,420,280,420,175,255]
   };
   (widths[sheet.getName()]||[]).forEach(function (w,i) { sheet.setColumnWidth(i+1,w); });
 }
@@ -566,24 +618,30 @@ function styleSheet_(sheet) {
 function populateExamples_(ss) {
   const sheet = ss.getSheetByName(CFG.EXAMPLES) || getSheetWithHeaders_(ss,CFG.EXAMPLES,EXAMPLE_HEADERS);
   const last = sheet.getLastRow();
-  const urls = last>1 ? sheet.getRange(2,5,last-1,1).getDisplayValues().flat() : [];
-  const known = {}; urls.forEach(function (u) { if (u) known[u]=true; });
+  const urls = last > 1 ? sheet.getRange(2,5,last-1,1).getDisplayValues().flat() : [];
+  const rowByUrl = {};
+  urls.forEach(function (url, index) { if (url) rowByUrl[url] = index + 2; });
   const now = Utilities.formatDate(new Date(),CFG.TZ,'yyyy-MM-dd HH:mm:ss')+' WIB';
   const rows = [];
   EXAMPLES.forEach(function (e) {
-    if (known[e.url]) return;
-    rows.push([e.id,e.title,e.creator,e.platform,e.url,e.topic,e.lesson,now]); known[e.url]=true;
+    if (rowByUrl[e.url]) {
+      // Keep existing records and fill/update only the new format-match metadata column.
+      sheet.getRange(rowByUrl[e.url],9).setValue(e.formatMatch);
+      return;
+    }
+    rows.push([e.id,e.title,e.creator,e.platform,e.url,e.topic,e.lesson,now,e.formatMatch]);
+    rowByUrl[e.url] = sheet.getLastRow() + rows.length;
   });
   if (rows.length) sheet.getRange(sheet.getLastRow()+1,1,rows.length,EXAMPLE_HEADERS.length).setValues(rows);
   styleSheet_(sheet);
 }
 
 function chooseExample_(text) {
-  const s = String(text||'').toLowerCase();
-  if (/deleg|mendeleg|ownership|tugas/.test(s)) return EXAMPLES[0];
-  if (/tim|team|manager|pemimpin|kepemimpinan/.test(s)) return EXAMPLES[3];
-  if (/komunikasi|feedback|emosi|curiosity/.test(s)) return EXAMPLES[5];
-  return EXAMPLES[1];
+  const s = String(text || '').toLowerCase();
+  const options = EXAMPLES.filter(function (e) {
+    return e.formatMatch === 'Feed (single image)' && /leadership|team|manager|deleg|feedback|komunikasi|emosi|tugas/.test(s);
+  });
+  return options.length ? options[0] : null;
 }
 
 function testGeminiApi() {
