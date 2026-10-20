@@ -344,6 +344,10 @@ def main():
     else:
         start = datetime.now(WIB).date()
     run_time = datetime.now(WIB).strftime("%Y-%m-%d %H:%M:%S WIB")
+    required_secrets = ["GOOGLE_SHEET_ID", "GOOGLE_SERVICE_ACCOUNT_JSON", "GEMINI_API_KEY"]
+    missing_secrets = [name for name in required_secrets if not os.environ.get(name, "").strip()]
+    if missing_secrets:
+        raise RuntimeError("Missing GitHub Actions secrets: " + ", ".join(missing_secrets) + ". Add them in Settings > Secrets and variables > Actions before running.")
     print(f"Researching posts for {start.isoformat()} through {(start + timedelta(days=6)).isoformat()} WIB.")
 
     refs = fetch_references()
