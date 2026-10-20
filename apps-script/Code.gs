@@ -16,16 +16,22 @@ const CFG = {
   TIMES: ['09:00', '12:15', '15:30', '18:45', '20:30'],
   FORMATS: ['Reels', 'Carousel', 'Feed (single image)'],
   QUERIES: [
-    'site:hbr.org leadership teams managers workplace when:365d',
-    'site:gallup.com workplace manager employee engagement when:365d',
-    'site:sloanreview.mit.edu leadership teamwork organization when:365d',
-    'site:ccl.org leadership delegation feedback emotional intelligence when:365d',
-    'site:shrm.org leadership workplace managers teams when:365d',
-    'site:mckinsey.com/featured-insights leadership organization people when:365d',
-    'site:atlassian.com/blog teamwork collaboration workplace when:365d',
-    'site:apa.org workplace stress leadership teams when:365d',
-    'site:greatergood.berkeley.edu empathy emotional intelligence work when:365d',
-    'leadership team effectiveness workplace communication delegation research when:365d'
+    // Search Arnold's public professional identity first; use only public, linkable material.
+    'Arnold Priadi Bolang leadership coach manager team workplace when:365d',
+    'site:linkedin.com/posts/arnold-priadi-bolang leadership team manager when:365d',
+    // Trusted leadership, people-management, organizational-behavior and workplace-research publishers.
+    'site:gallup.com/workplace manager team engagement workplace leadership when:365d',
+    'site:ccl.org leadership manager feedback delegation emotional intelligence when:365d',
+    'site:hbr.org leadership manager team delegation feedback workplace when:365d',
+    'site:sloanreview.mit.edu leadership managers teams culture execution when:365d',
+    'site:shrm.org leadership management employee relations team when:365d',
+    'site:cipd.org people management leadership evidence managers workplace when:365d',
+    'site:ddi.com research frontline leadership manager effectiveness when:365d',
+    'site:mckinsey.com leadership frontline managers organizational health workplace when:365d',
+    'site:apa.org workplace stress leadership managers teams when:365d',
+    'site:rework.withgoogle.com teams effectiveness psychological safety when:365d',
+    'leadership manager delegation feedback workplace case study real company when:365d',
+    'Indonesian leadership supervisor team communication workplace case study when:365d'
   ]
 };
 
@@ -35,20 +41,29 @@ const CAL_HEADERS = [
   'Research Ref 1 Title','Research Ref 1 Publisher','Research Ref 1 Date','Research Ref 1 URL','Research Ref 1 Summary',
   'Research Ref 2 Title','Research Ref 2 Publisher','Research Ref 2 Date','Research Ref 2 URL','Research Ref 2 Summary',
   'Creator Example Title','Creator / Publisher','Platform','Creator Example URL','How to Adapt the Example',
-  'Original Angle (Not a Copy)','Fact-check Notes','Status','Generated At (WIB)'
+  'Original Angle (Not a Copy)','Fact-check Notes','Status','Generated At (WIB)',
+  'Workplace Scenario / Case (with source status)','Carousel Slide Copy (per slide)'
 ];
 const REF_HEADERS = ['Reference ID','Article Title','Publisher','Published Date','Article URL','Summary / Snippet','Search Query','Retrieved At (WIB)'];
 const EXAMPLE_HEADERS = ['Example ID','Content Title','Creator / Publisher','Platform','Content URL','Topic','What to Study','Added At (WIB)'];
 
 // Public example links checked before being added. Learn the format; do not copy the content.
 const EXAMPLES = [
+  // First-party sources define Arnold's real public positioning and existing content themes.
+  {id:'AB01',title:'Professional profile — Coach, Facilitator and Trainer',creator:'Arnold Priadi Bolang (first-party profile)',platform:'LinkedIn profile',url:'https://id.linkedin.com/in/arnold-priadi-bolang-70252a6b',topic:'Leadership development, personal growth, creative communication, adaptive transformation',lesson:'PRIMARY PERSONAL-BRAND SOURCE. Align the niche with leadership development, personal growth, communication, and teams. Do not invent credentials, clients, results or biographical details.'},
+  {id:'AB02',title:'Managing Change with Emotional Intelligence at Quipper',creator:'Arnold Priadi Bolang (first-party public post)',platform:'LinkedIn post',url:'https://www.linkedin.com/posts/arnold-priadi-bolang-70252a6b_manajemenperubahan-kecerdasanemosional-activity-7306144835407597568-nuA7',topic:'Change management, emotional intelligence, manager development, workplace training',lesson:'PUBLIC FIELD EXAMPLE. The post describes a two-day session for Quipper managers about managing change and emotional intelligence. Do not claim confidential details or unreported outcomes.'},
+  {id:'AB03',title:'From Executor to Planner — Supervisor Refreshment with United Tractors',creator:'Arnold Priadi Bolang (first-party public post)',platform:'LinkedIn post',url:'https://www.linkedin.com/posts/arnold-priadi-bolang-70252a6b_peopledevelopment-leadership-pdca-activity-7341061749959233536-Svqx',topic:'Supervisor development, PDCA, from executor to planner, team management',lesson:'PUBLIC FIELD EXAMPLE. The post describes supervisor development and using PDCA. Use only details actually disclosed in the source; never invent participant results.'},
+  {id:'AB04',title:'Empat Tipe Orang di Dalam Tim',creator:'Arnold Priadi Bolang (first-party public post)',platform:'LinkedIn post',url:'https://www.linkedin.com/posts/arnold-priadi-bolang-70252a6b_empat-tipe-orang-di-dalam-tim-activity-7165911292552134656-SQ3I',topic:'Team composition, behavior, leadership and team development',lesson:'Study an existing public theme to understand audience fit. Develop a new angle; do not repeat the same framework or assert performance figures without rechecking the original post.'},
+  {id:'AB05',title:'Leading Innovation for Sustainable Business Growth at NEXA',creator:'Arnold Priadi Bolang (first-party public post)',platform:'LinkedIn post',url:'https://www.linkedin.com/posts/arnold-priadi-bolang-70252a6b_training-leadership-business-activity-7166235153613176832-Fh2G',topic:'Leadership, innovation, defining direction, sustainable growth',lesson:'Publicly described a training session at NEXA. Treat it as first-party context only; do not invent business outcomes or confidential client details.'},
+
+  // External examples are for format study only; never copy wording or structure verbatim.
   {id:'CE01',title:'A Smarter Way to Delegate: What to Keep vs. What to Hand Off',creator:'Harvard Business Review',platform:'LinkedIn post',url:'https://www.linkedin.com/posts/harvard-business-review_a-smarter-way-to-delegate-what-to-keep-vs-activity-7377051137730056192-bHE0',topic:'Delegation, task ownership, leadership',lesson:'Notice the direct promise and practical contrast; make a new Indonesian workplace angle.'},
   {id:'CE02',title:'Research on Delegating Shows How Uncomfortable We Are Making Choices for Others',creator:'Harvard Business Review',platform:'LinkedIn post',url:'https://www.linkedin.com/posts/harvard-business-review_research-on-delegating-shows-how-uncomfortable-activity-7441976077155008512-M3Y5',topic:'Delegation, decision ownership, trust',lesson:'Study how a research idea is framed as a concise professional question. Verify claims against the primary source.'},
   {id:'CE03',title:'How to Tell If You’re Delegating Too Much — and What to Do About It',creator:'Harvard Business Review',platform:'LinkedIn post',url:'https://www.linkedin.com/posts/harvard-business-review_how-to-tell-if-youre-delegating-too-much-activity-7404573157266980864-uza9',topic:'Delegation, management, communication',lesson:'Study the diagnostic structure: recognizable symptoms followed by corrective direction. Do not reuse the title.'},
   {id:'CE04',title:'As Your Team Gets Bigger, Your Leadership Style Has to Adapt',creator:'Harvard Business Review',platform:'LinkedIn post',url:'https://www.linkedin.com/posts/harvard-business-review_as-your-team-gets-bigger-your-leadership-activity-7194834344987742208-dQO2',topic:'Team growth, manager effectiveness, leadership',lesson:'Study the link between a familiar situation and a leadership implication; develop a different example.'},
   {id:'CE05',title:'How to Delegate',creator:'Harvard Business Review',platform:'HBR podcast / article',url:'https://hbr.org/podcast/2023/09/how-to-delegate',topic:'Delegation, clarity, expectations',lesson:'Use the expert discussion to inform a useful explanation, then develop an original practical framework.'},
   {id:'CE06',title:'One Simple Leadership Skill Nobody Teaches (But Everyone Needs)',creator:'Simon Sinek',platform:'Publisher article',url:'https://simonsinek.com/stories/one-simple-leadership-skill-nobody-teaches',topic:'Leadership, curiosity, communication',lesson:'Study how a common professional frustration opens a story; do not imitate the author’s voice.'}
-];
+];;
 
 function onOpen() {
   SpreadsheetApp.getUi().createMenu('Arnold Content Planner')
@@ -206,30 +221,47 @@ function generatePosts_(slots, refs) {
     return {id:e.id,title:e.title,creator:e.creator,platform:e.platform,url:e.url,topic:e.topic,lesson:e.lesson};
   });
   const system = [
-    'You are an Indonesian editorial strategist for executive coach and leadership trainer Arnold Bolang.',
-    'Niche: leadership, team performance, manager effectiveness, delegation, communication, emotional intelligence, workplace behavior, executive presence, and productivity.',
-    'Create useful content for Indonesian professionals and managers. Do not copy another creator’s wording or mimic an exact voice.',
-    'Use only research references and example IDs supplied in the input. Never invent article URLs, publishers, dates, statistics, studies, quotations, testimonials, client stories, or first-person experiences for Arnold.',
-    'Each post must cite 1–2 valid research reference IDs and select exactly one creator example ID. If the source summary is thin, avoid detailed factual claims.',
-    'Adapt each source into an original Indonesian workplace angle, not a translation of the source headline. Each post needs a realistic workplace scenario, one clear insight and a practical takeaway.',
+    'You are the Indonesian editorial strategist for Arnold Priadi Bolang, a coach, facilitator and trainer. Build content aligned with his real, public professional positioning, not a generic influencer brand.',
+    'PRIMARY NICHE: practical leadership, manager effectiveness, team performance, delegation, accountability, feedback, workplace communication, emotional intelligence, conflict, supervisor development, executive presence, decision-making, and productivity through better people management.',
+    'EDITORIAL PRIORITY: at least 80% of posts must directly concern leadership, people management, teams or real workplace practice. AI/tool content is optional and limited to at most ONE post per 7-day batch; do not force AI into unrelated topics.',
+    'Use Arnold personal-brand sources to understand publicly visible themes and real public field examples. Use public client/training context only when the supplied source explicitly supports it. Never invent Arnold’s experiences, clients, quotes, credentials, results or private details.',
+    'Research must be reputable and linkable. Use only supplied research references and supplied public examples. Never invent URLs, publishers, dates, statistics, study results, quotations, testimonials or case-study facts. If a reference snippet is weak, avoid a specific factual claim and flag what must be checked in the full source.',
+    'Every post must have 1–2 valid research reference IDs, exactly one supplied example_id, a clear original Indonesian angle, and a workplace scenario or case. No fake numbers or fabricated named companies.',
+    'Every hook / cover text must be exactly 4–9 words, counted as words separated by spaces. This is a hard rule for Reels, Carousel and Feed. Avoid long explanatory hooks.',
+    'For every post, choose case_type: documented_case only when supplied public references support the specific case and provide a valid case_source_id (R1... or AB01...); otherwise use illustrative_scenario and clearly present it as an example/simulation, not a true event.',
+    'For Carousel posts, output exactly 7 carousel_slides objects. Each object has slide_number (1–7), role, slide_text, visual_direction. These must be READY-TO-USE on-slide sentences, not an outline or labels such as “explain the problem”. Slide 1 role is cover and its slide_text must exactly equal hook. Slides 2–6 each contain 1–2 concise, concrete sentences. Slide 7 role is CTA and contains a useful, natural call to action. Use the roles: cover, situation_lapangan, kesalahan_umum, analisis, respons_pemimpin, contoh_penerapan, CTA. Include a short visual direction per slide.',
+    'For non-Carousel posts, carousel_slides must be an empty array.',
+    'Reels: give a 25–40 second speaking script/production_plan with 0–3 second hook, scene-by-scene beats, concrete workplace example, takeaway and shot direction. Do not return only a vague outline.',
+    'Feed (single image): include a short visual concept and a concise in-image statement; keep the full explanation in caption.',
+    'Caption: Bahasa Indonesia, about 80–150 words, useful professional tone, clear insight, practical step and natural CTA. Avoid fake first-person anecdotes from Arnold.',
+    'Pillars should fit: Leadership in Practice, Manager Toolkit, Team Performance, Delegation & Accountability, Communication & Emotional Intelligence, Workplace Case, Arnold Public Field Insight, or Professional Productivity. Do not use AI as a pillar unless the post genuinely requires it.',
     'Return valid JSON only: {"posts":[...]} with exactly one post per supplied slot, in the same order. There can be 7–21 posts.',
-    'Each post fields: topic, pillar, hook, production_plan, caption, cta, hashtags (array of 3–5), reference_ids (array of 1–2 IDs), example_id, example_adaptation, original_angle, fact_check_notes.',
-    'Pillars: Education, Point of View, Proof of Work, Personal Perspective.',
-    'Reels: 25–40-second outline, 0–3 second hook, insight, concrete example, takeaway, shot direction.',
-    'Carousel: cover plus 5–7 slides, one point each, final slide useful CTA. Feed single-image: visual concept, short in-image statement and caption angle.',
-    'Caption: Indonesian, roughly 80–150 words, strong opening, useful explanation, takeaway and natural CTA; no unverified claims.',
-    'A source URL is an article/research reference or a format example, not necessarily an Instagram post. Do not fabricate content details.'
-  ].join('\n');
+    'Required post fields: topic, pillar, hook, production_plan, carousel_slides, caption, cta, hashtags (array of 3–5), reference_ids (array of 1–2 valid R IDs), example_id, example_adaptation, original_angle, case_type, case_or_field_scenario, case_source_id (R ID or AB ID for documented cases, otherwise empty string), fact_check_notes.',
+    'The research reference should support factual claims. A first-party Arnold post may be selected as case_source_id when the post refers specifically to a public example from Arnold. Do not imply that an external creator’s post is evidence of Arnold’s experience.',
+    'Source links are references to verify, not permission to copy. Create original explanations, examples, and slide sentences.'
+  ].join('\\n');
   const prompt = {
-    niche: 'Arnold Bolang — leadership coach and trainer',
+    niche: 'Arnold Priadi Bolang — coach, facilitator and trainer; practical leadership and people development',
     schedule_slots: slots,
+    editorial_priorities: {
+      min_share_leadership_people_management_and_workplace_practice: '80%',
+      ai_related_posts: '0 or 1 post per 7-day batch; optional, never forced',
+      real_cases: 'Use only when a supplied reputable/public source supports the detail',
+      otherwise: 'Use a clearly labelled illustrative workplace scenario, never present it as a true client story',
+      field_focus: 'Manager and supervisor decisions, team friction, feedback conversations, delegation, accountability, performance, change and communication'
+    },
+    arnold_personal_brand_sources: examples.filter(function (e) { return e.id.indexOf('AB') === 0; }),
+    external_creator_content_examples: examples.filter(function (e) { return e.id.indexOf('CE') === 0; }),
     public_research_references: sources,
-    public_creator_content_examples: examples,
     instructions: [
       'Return exactly one original post for every slot in the exact order.',
       'Do not change date, time, format or slot number.',
-      'Use only provided reference IDs and choose one provided creator example ID.',
-      'Avoid repeating the same topic or hook. No fake statistics, testimonials or personal stories.',
+      'Every hook must be exactly 4–9 words.',
+      'For Carousel, deliver seven fully written slides, not just an outline; each slide needs actual on-slide copy.',
+      'Use a reputable supplied R research reference for each post and choose one supplied AB/CE example ID.',
+      'At least 80% of topics must be leadership/people management/workplace practice; AI is optional and limited to at most one post in this week.',
+      'Use documented cases only when source-backed; otherwise label the scenario as illustrative.',
+      'Avoid repeating the same topic or hook. No fake statistics, testimonials or invented Arnold experiences.',
       'Drafts only. Do not publish to Instagram.'
     ]
   };
