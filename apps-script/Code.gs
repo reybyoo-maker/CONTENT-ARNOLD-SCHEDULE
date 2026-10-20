@@ -94,6 +94,13 @@ function runWeeklyGeneration() {
   requireSetup_();
   const props = PropertiesService.getScriptProperties();
   const start = props.getProperty(CFG.NEXT_DATE_PROP) || CFG.INITIAL_DATE;
+  const today = Utilities.formatDate(new Date(), CFG.TZ, 'yyyy-MM-dd');
+  // If the first week was generated manually before the first Wednesday trigger,
+  // do not generate the following week early.
+  if (start > today) {
+    Logger.log('Next calendar starts on ' + start + '; skipping early weekly trigger on ' + today + '.');
+    return;
+  }
   generateWeek_(start);
   props.setProperty(CFG.NEXT_DATE_PROP, addDaysIso_(start, 7));
 }
