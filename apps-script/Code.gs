@@ -249,9 +249,80 @@ function generatePosts_(slots, refs) {
   const body = JSON.parse(text);
   if (!body.candidates || !body.candidates[0] || !body.candidates[0].content) throw new Error('Gemini returned no content. Check Apps Script Executions and API quota.');
   const raw = (body.candidates[0].content.parts || []).map(function (p) { return p.text || ''; }).join('').trim();
-  const parsed = JSON.parse(raw);
-  if (!Array.isArray(parsed.posts) || parsed.posts.length !== slots.length) throw new Error('Gemini returned an unexpected number of posts. Expected ' + slots.length + '.');
+  let parsed;
+  try {
+    parsed = parseGeminiJson_(raw);
+  } catch (firstParseError) {
+    Logger.log('Gemini output was invalid JSON; asking Gemini to repair the JSON format. First parse error: ' + firstParseError.message);
+    parsed = repairGeminiJson_(endpoint, key, raw, firstParseError);
+  }
+  if (!Array.isArray(parsed.posts) || parsed.posts.length !== slots.length) {
+    throw new Error('Gemini returned an unexpected number of posts. Expected ' + slots.length + ', received ' +
+      (parsed.posts && parsed.posts.length !== undefined ? parsed.posts.length : 'no posts') +
+      '. Re-run the generator; no calendar rows were written.');
+  }
   return parsed.posts;
+}
+
+function parseGeminiJson_(text) {
+  let value = String(text || '').trim();
+  value = value.replace(/^\uFEFF/, '');
+  value = value.replace(/^\x60\x60\x60(?:json)?\s*/i, '').replace(/\s*\x60\x60\x60\s*$/, '');
+  return JSON.parse(value);
+}
+
+function repairGeminiJson_(endpoint, apiKey, invalidText, originalError) {
+  // Retry once if the model returned malformed JSON despite responseMimeType=application/json.
+  const repairInstruction = [
+    'You are a strict JSON syntax repair tool.',
+    'Repair the supplied text into syntactically valid JSON.',
+    'Do not summarize, remove posts, or change the meaning of the content.',
+    'Return one JSON object only, with the same top-level "posts" array and all posts preserved.',
+    'Every object property name must use double quotes.',
+    'Use double quotes for all string values. Escape quotation marks and newlines correctly.',
+    'Remove trailing commas and comments. Do not wrap the output in Markdown fences.',
+    'Do not invent or modify any URLs or source reference IDs.'
+  ].join('\\n');
+  const repairPayload = {
+    systemInstruction: {parts: [{text: repairInstruction}]},
+    contents: [{role: 'user', parts: [{text: 'Repair this malformed JSON. Original parser error: ' +
+      String(originalError && originalError.message || 'invalid JSON') +
+      '\\n\\nMALFORMED JSON START\\n' + String(invalidText || '').slice(0, 60000) + '\\nMALFORMED JSON END'}]},
+    generationConfig: {temperature: 0, responseMimeType: 'application/json', maxOutputTokens: 20000}
+  };
+  const response = UrlFetchApp.fetch(endpoint, {
+    method: 'post',
+    contentType: 'application/json',
+    headers: {'x-goog-api-key': apiKey},
+    payload: JSON.stringify(repairPayload),
+    muteHttpExceptions: true
+  });
+  const status = response.getResponseCode();
+  const text = response.getContentText();
+  if (status < 200 || status >= 300) {
+    throw new Error('Gemini returned malformed JSON and the repair request failed with HTTP ' + status +
+      '. First parse error: ' + (originalError && originalError.message || 'invalid JSON') +
+      '. Details: ' + text.slice(0, 500));
+  }
+  let body;
+  try {
+    body = JSON.parse(text);
+  } catch (e) {
+    throw new Error('Gemini JSON-repair response was not valid API JSON: ' + e.message);
+  }
+  if (!body.candidates || !body.candidates[0] || !body.candidates[0].content) {
+    throw new Error('Gemini could not repair the generated JSON. Check Apps Script → Executions and try generating again.');
+  }
+  const repairedText = (body.candidates[0].content.parts || []).map(function (p) { return p.text || ''; }).join('').trim();
+  try {
+    return parseGeminiJson_(repairedText);
+  } catch (e) {
+    Logger.log('JSON repair still failed: ' + e.message + '. Repaired response preview: ' + repairedText.slice(0, 600));
+    throw new Error('Gemini generated malformed JSON twice. First error: ' +
+      (originalError && originalError.message || 'invalid JSON') +
+      '. Repair error: ' + e.message +
+      '. Please run the generator again. No calendar rows were written.');
+  }
 }
 
 function collectReferences_() {
