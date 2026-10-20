@@ -53,9 +53,9 @@ CREATOR_TAB = "Creator Examples"
 CREATOR_HEADERS = ["Example ID", "Content Title", "Creator/Publisher", "Platform", "Content URL", "Topic", "What to Study", "Retrieved At (WIB)"]
 CREATOR_EXAMPLES = [
     {
-        "id": "C1", "title": "A Smarter Way to Delegate: What to Keep vs. What to Hand Off",
+        "id": "C1", "title": "How to Tell If You’re Delegating Too Much — and What to Do About It",
         "creator": "Harvard Business Review", "platform": "LinkedIn post",
-        "url": "https://www.linkedin.com/posts/harvard-business-review_a-smarter-way-to-delegate-what-to-keep-vs-activity-7377051137730056192-bHE0",
+        "url": "https://www.linkedin.com/posts/harvard-business-review_how-to-tell-if-youre-delegating-too-much-activity-7404573157266980864-uza9",
         "topic": "delegation, task ownership, leadership",
         "lesson": "Notice the direct promise, clear contrast, and practical framing. Create a different original hook and structure; do not copy wording."
     },
@@ -76,7 +76,7 @@ CREATOR_EXAMPLES = [
     {
         "id": "C4", "title": "As Your Team Gets Bigger, Your Leadership Style Has to Adapt",
         "creator": "Harvard Business Review", "platform": "LinkedIn post",
-        "url": "https://www.linkedin.com/posts/harvard-business-review_as-your-team-gets-bigger-your-leadership-activity-7185955843236855811-PaP0",
+        "url": "https://www.linkedin.com/posts/harvard-business-review_as-your-team-gets-bigger-your-leadership-activity-7194834344987742208-dQO2",
         "topic": "team growth, manager effectiveness, leadership",
         "lesson": "Study the clear contrast between a familiar situation and a leadership implication. Develop a distinct Indonesian workplace angle."
     },
