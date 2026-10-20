@@ -1,61 +1,51 @@
-# Arnold Bolang — Weekly Content Planner
+# Arnold Bolang — Content Planner (Google Sheets + Apps Script + Gemini)
 
-Workflow mingguan untuk kalender Instagram niche Arnold Bolang: leadership, team performance, delegation, komunikasi, emotional intelligence, workplace behavior, executive presence, dan produktivitas kerja.
+Automation ini sengaja disederhanakan. Script berjalan langsung dari Google Sheets. Yang diperlukan hanya **Gemini API key dari Google AI Studio** dan Apps Script yang terikat pada spreadsheet. Tidak perlu Service Account, Google Sheets API setup terpisah, GitHub Actions, server, atau instal aplikasi.
 
-Setiap minggu automation meneliti artikel/riset publik, lalu membuat 7–21 draft post (1–3 per hari) dengan format, jam WIB yang berbeda, hook, outline produksi, caption, CTA, hashtag, serta tautan referensi yang benar-benar ditemukan. Tautan referensi adalah artikel/riset untuk diperiksa, bukan klaim bahwa URL tersebut merupakan Reels Instagram. Konten harus diadaptasi menjadi sudut pandang orisinal, bukan disalin.
+## Fitur
+- Membuat **1–3 post per hari**, pada jam yang berbeda.
+- Format bervariasi: Reels, Carousel, dan Feed single-image.
+- Slot jam WIB dipilih dari 09.00, 12.15, 15.30, 18.45, dan 20.30.
+- Jumlah, jam, dan format per tanggal stabil ketika dijalankan ulang sehingga slot tidak berubah dan tidak terduplikasi.
+- Kalender awal dimulai 21 Oktober 2026.
+- Menghasilkan ide, hook, outline Reels/carousel, caption Bahasa Indonesia, CTA, hashtag, sumber riset publik, dan tautan contoh konten publik pihak lain.
+- Meneliti artikel/riset publik melalui Google News RSS dari penerbit profesional. Topik termasuk leadership, team performance, delegation, komunikasi, emotional intelligence, perilaku kerja, executive presence, dan produktivitas.
+- Menyimpan contoh konten terkurasi di tab Creator Examples untuk mempelajari format. Konten orang lain tidak disalin.
+- Tidak mengarang URL, statistik, testimoni, atau pengalaman pribadi. Jika pencarian sumber gagal, proses berhenti dengan error alih-alih membuat referensi palsu.
+- Semua ide adalah draft berstatus **DRAFT — REVIEW BEFORE POSTING**. Script tidak memublikasikan ke Instagram.
+- Model default adalah **gemini-3.5-flash-lite**. Jika model tidak tersedia pada akunmu, ganti konstanta MODEL di Code.gs dengan model stabil yang tersedia di AI Studio.
 
-## Jadwal posting acak 1–3 konten per hari
+## Cara pasang — sekali saja
+1. Buat spreadsheet di https://sheets.new dengan nama **Arnold Bolang — Content Calendar**.
+2. Di spreadsheet, pilih **Extensions → Apps Script**.
+3. Buka file **apps-script/Code.gs** di repository ini, salin seluruh isinya, tempel ke editor Apps Script, lalu klik **Save**.
+4. Buat API key di https://aistudio.google.com/apikey.
+5. Kembali ke spreadsheet dan refresh browser.
+6. Dari menu **Arnold Content Planner**, pilih **1. Setup API key + spreadsheet automation**. Tempel API key saat diminta. Key disimpan di Script Properties, bukan di sel spreadsheet.
+7. Setujui izin Google yang diminta untuk mengakses spreadsheet dan mengambil sumber dari internet.
+8. Pilih **4. Test Gemini API key** untuk mengecek koneksi.
+9. Pilih **2. Generate first week (21–27 Oct 2026)** untuk membuat jadwal dan draft awal.
 
-Workflow membuat **1 sampai 3 post per hari**, pada jam yang berbeda. Jumlah, jam, dan format dipilih secara pseudo-random dengan seed berdasarkan tanggal; jadi jadwal untuk suatu tanggal tetap sama saat workflow dijalankan ulang dan slot yang sudah ada tidak diduplikasi.
+## Tab spreadsheet yang dibuat
+- **Content Calendar** — jadwal, jenis konten, hook, outline, caption, CTA, hashtag, tautan referensi, status, dan waktu.
+- **Reference Library** — artikel/riset publik yang ditemukan oleh pencarian mingguan.
+- **Creator Examples** — contoh konten publik terkurasi dengan tautan langsung dan catatan aspek format yang layak dipelajari.
 
-Pilihan jam WIB: **09.00, 12.15, 15.30, 18.45, 20.30**. Untuk tiap hari, workflow memilih 1–3 jam yang berbeda dan memilih jenis konten tanpa pengulangan pada hari yang sama dari **Reels, Carousel, dan Feed (single image)**. Jumlah total dalam satu pekan berubah-ubah antara 7 dan 21 post.
+## Jadwal otomatis
+Setup membuat time-driven trigger setiap Rabu sekitar pukul **07.10 WIB**, lalu membuat kalender tujuh hari berikutnya. Trigger Apps Script berjalan dalam jendela waktu sekitar jam yang dipilih, tidak selalu tepat pada menit yang sama. Spreadsheet tidak perlu tetap terbuka.
 
-Jam tersebut adalah variasi awal untuk diuji, bukan klaim jam terbaik. Gunakan Instagram Insights setelah beberapa minggu (retensi/watch time, saves, shares, profile visits, dan inquiries) untuk melihat pola yang cocok bagi audiens Arnold.
+Repository ini hanya menyimpan salinan/source code dan dokumentasi. Eksekusi otomatis terjadi langsung dalam Apps Script milik akun Google yang memasang trigger.
 
-## Setup sekali saja
-
-### 1. Buat spreadsheet
-Buat Google Spreadsheet misalnya **Arnold Bolang — Content Calendar**. Salin ID dari URL:
-https://docs.google.com/spreadsheets/d/ID_SPREADSHEET/edit
-
-Workflow membuat tiga tab otomatis: **Content Calendar**, **Reference Library**, dan **Creator Examples**.
-
-### 2. Aktifkan Google Sheets API
-Di Google Cloud Console, buat/pilih project, aktifkan Google Sheets API, buat Service Account, lalu buat JSON key. Buka file JSON dan ambil nilai client_email. Bagikan spreadsheet ke alamat client_email sebagai **Editor**. Jangan commit atau mempublikasikan JSON key.
-
-### 3. Buat Gemini API key
-Buka https://aistudio.google.com/apikey dan buat API key. Kuota gratis, rate limit, nama model, dan syarat layanan dapat berubah; periksa kuota di AI Studio. Workflow tidak memakai model berbayar kecuali kamu mengonfigurasi model/API key yang mengharuskannya.
-
-### 4. Tambahkan GitHub Secrets
-Di repo, buka **Settings → Secrets and variables → Actions → New repository secret**. Buat tiga secret:
-- **GOOGLE_SHEET_ID** — ID spreadsheet.
-- **GOOGLE_SERVICE_ACCOUNT_JSON** — seluruh isi JSON key Service Account.
-- **GEMINI_API_KEY** — API key dari AI Studio.
-
-Jangan taruh key di kode atau log. Model default adalah **gemini-3.5-flash-lite**. Jika tidak tersedia di akunmu, buat repository variable bernama **GEMINI_MODEL** dengan model stabil yang tersedia.
-
-### 5. Jalankan pertama kali
-1. Buka tab **Actions**.
-2. Pilih **Weekly Arnold Content Planner**.
-3. Klik **Run workflow**.
-4. Untuk kalender pertama, isi start_date dengan **2026-10-21**.
-5. Buka spreadsheet dan periksa tiga tab: Content Calendar, Reference Library, dan Creator Examples.
-
-Jika tanggal itu sudah lewat saat setup dilakukan, masukkan tanggal mulai yang kamu inginkan. Tanggal yang sudah ada tidak akan ditambahkan ulang.
-
-### 6. Jadwal otomatis
-Workflow terjadwal setiap Rabu pukul **07.10 WIB** (00:10 UTC) dan membuat kalender 7 hari mulai tanggal lokal tersebut. Scheduled Actions berjalan pada default branch. GitHub dapat menonaktifkan workflow terjadwal pada repo publik yang tidak aktif 60 hari; aktifkan ulang dari tab Actions jika diperlukan.
-
-## Alur research
-Workflow menggunakan Google News RSS untuk mencari materi dari penerbit profesional, termasuk Harvard Business Review, Gallup, MIT Sloan Management Review, Center for Creative Leadership, SHRM, McKinsey, Atlassian, dan sumber relevan lain. Artikel ditemukan lebih dulu; Gemini hanya boleh menggunakan ID referensi yang diberikan. Jika sumber terlalu sedikit atau API gagal, workflow berhenti dengan error daripada membuat URL atau data palsu.
-
-Kalender berisi tanggal, hari, jam WIB, jumlah per hari, format, pilar, topik, hook cover, outline/production plan, caption, CTA, hashtag, referensi riset 1 dan 2 beserta URL/ringkasan, satu contoh konten publik dari pihak lain beserta URL dan cara mengadaptasi formatnya, original angle, catatan fact-check, status, dan waktu pembuatan. Setiap post berstatus **DRAFT — REVIEW BEFORE POSTING**; review klaim dan caption sebelum menerbitkan.
-
-**Creator Examples** berisi contoh konten publik yang sudah dikurasi, termasuk post LinkedIn Harvard Business Review dan artikel leadership lain, dengan URL langsung serta catatan apa yang bisa dipelajari dari formatnya. Contoh ini adalah referensi format, bukan otomatis bahan bukti faktual dan tidak diperbarui setiap minggu. Referensi riset di Content Calendar dan Reference Library diperbarui dari hasil pencarian publik setiap kali workflow berjalan.
+## Biaya dan batasan
+- Apps Script memakai kuota akun Google.
+- Gemini API memiliki kuota/rate limit dan ketentuan gratis atau berbayar yang dapat berubah. Pantau pemakaian di Google AI Studio.
+- Jangan bagikan API key atau menaruhnya dalam kode publik.
+- RSS memberi judul, publisher, tautan, dan cuplikan. Periksa sumber lengkap sebelum menerbitkan klaim faktual.
+- Gemini bisa salah memahami cuplikan, jadi baca ulang draft sebelum posting.
 
 ## Troubleshooting
-- **Permission denied:** bagikan Google Sheet ke client_email sebagai Editor.
-- **Missing secret:** cek ejaan ketiga nama secret.
-- **Gemini 400/403/429:** cek model, API key, region, dan kuota.
-- **Referensi kurang:** coba lagi nanti; workflow sengaja menolak mengarang sumber.
-- **Tanggal tidak bertambah:** tanggal yang sudah ada sengaja dilewati untuk mencegah duplikasi.
+- **API key kosong:** jalankan Setup dari menu Arnold Content Planner.
+- **HTTP 400/403/429:** cek API key, model yang tersedia, dan kuota di AI Studio.
+- **Sumber kurang:** coba lagi nanti; script sengaja tidak membuat referensi palsu.
+- **Header berbeda:** gunakan spreadsheet baru yang kosong atau ubah nama tab lama. Script tidak menghapus data lama otomatis.
+- Lihat **Apps Script → Executions** untuk detail error.
