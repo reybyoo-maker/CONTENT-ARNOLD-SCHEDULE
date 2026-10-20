@@ -2,21 +2,15 @@
 
 Workflow mingguan untuk kalender Instagram niche Arnold Bolang: leadership, team performance, delegation, komunikasi, emotional intelligence, workplace behavior, executive presence, dan produktivitas kerja.
 
-Setiap minggu automation meneliti artikel/riset publik, lalu membuat 7 draft post (1 per hari) dengan format, jam WIB, hook, outline produksi, caption, CTA, hashtag, serta tautan referensi yang benar-benar ditemukan. Tautan referensi adalah artikel/riset untuk diperiksa, bukan klaim bahwa URL tersebut merupakan Reels Instagram. Konten harus diadaptasi menjadi sudut pandang orisinal, bukan disalin.
+Setiap minggu automation meneliti artikel/riset publik, lalu membuat 7–21 draft post (1–3 per hari) dengan format, jam WIB yang berbeda, hook, outline produksi, caption, CTA, hashtag, serta tautan referensi yang benar-benar ditemukan. Tautan referensi adalah artikel/riset untuk diperiksa, bukan klaim bahwa URL tersebut merupakan Reels Instagram. Konten harus diadaptasi menjadi sudut pandang orisinal, bukan disalin.
 
-## Jadwal posting awal
+## Jadwal posting acak 1–3 konten per hari
 
-| Hari | Jumlah | Format | Jam WIB |
-|---|---:|---|---|
-| Senin | 1 | Reels | 19.00 |
-| Selasa | 1 | Carousel | 12.15 |
-| Rabu | 1 | Reels | 19.00 |
-| Kamis | 1 | Carousel | 12.15 |
-| Jumat | 1 | Reels | 19.00 |
-| Sabtu | 1 | Feed single-image | 10.00 |
-| Minggu | 1 | Carousel | 19.00 |
+Workflow membuat **1 sampai 3 post per hari**, pada jam yang berbeda. Jumlah, jam, dan format dipilih secara pseudo-random dengan seed berdasarkan tanggal; jadi jadwal untuk suatu tanggal tetap sama saat workflow dijalankan ulang dan slot yang sudah ada tidak diduplikasi.
 
-Ini jadwal awal untuk diuji, bukan klaim jam terbaik. Evaluasi Instagram Insights setelah beberapa minggu (retensi, saves, shares, profile visits, dan inquiries).
+Pilihan jam WIB: **09.00, 12.15, 15.30, 18.45, 20.30**. Untuk tiap hari, workflow memilih 1–3 jam yang berbeda dan memilih jenis konten tanpa pengulangan pada hari yang sama dari **Reels, Carousel, dan Feed (single image)**. Jumlah total dalam satu pekan berubah-ubah antara 7 dan 21 post.
+
+Jam tersebut adalah variasi awal untuk diuji, bukan klaim jam terbaik. Gunakan Instagram Insights setelah beberapa minggu (retensi/watch time, saves, shares, profile visits, dan inquiries) untuk melihat pola yang cocok bagi audiens Arnold.
 
 ## Setup sekali saja
 
