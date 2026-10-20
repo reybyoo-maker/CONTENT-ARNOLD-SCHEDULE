@@ -282,12 +282,12 @@ function repairGeminiJson_(endpoint, apiKey, invalidText, originalError) {
     'Use double quotes for all string values. Escape quotation marks and newlines correctly.',
     'Remove trailing commas and comments. Do not wrap the output in Markdown fences.',
     'Do not invent or modify any URLs or source reference IDs.'
-  ].join('\\n');
+  ].join('\n');
   const repairPayload = {
     systemInstruction: {parts: [{text: repairInstruction}]},
     contents: [{role: 'user', parts: [{text: 'Repair this malformed JSON. Original parser error: ' +
       String(originalError && originalError.message || 'invalid JSON') +
-      '\\n\\nMALFORMED JSON START\\n' + String(invalidText || '').slice(0, 60000) + '\\nMALFORMED JSON END'}]},
+      '\n\nMALFORMED JSON START\n' + String(invalidText || '').slice(0, 60000) + '\nMALFORMED JSON END'}]}],
     generationConfig: {temperature: 0, responseMimeType: 'application/json', maxOutputTokens: 20000}
   };
   const response = UrlFetchApp.fetch(endpoint, {
