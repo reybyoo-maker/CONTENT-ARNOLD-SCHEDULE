@@ -140,6 +140,7 @@ function generateWeek_(startIso) {
   refs.forEach(function (r, i) { sourceMap['R' + (i + 1)] = r; });
   const exampleMap = {};
   EXAMPLES.forEach(function (e) { exampleMap[e.id] = e; });
+  validateDraftPosts_(posts, pending, sourceMap, exampleMap);
   const now = Utilities.formatDate(new Date(), CFG.TZ, 'yyyy-MM-dd HH:mm:ss') + ' WIB';
   const rows = [];
 
@@ -154,17 +155,24 @@ function generateWeek_(startIso) {
     const tags = tagList.map(function (t) { return String(t || '').trim(); }).filter(Boolean).slice(0, 5)
       .map(function (t) { return t.charAt(0) === '#' ? t : '#' + t.replace(/^#+/, ''); }).join(' ');
     const r1 = chosen[0], r2 = chosen[1] || {};
+    const caseSourceId = String(post.case_source_id || '').trim();
+    const caseSource = sourceMap[caseSourceId] || exampleMap[caseSourceId];
+    const caseLabel = String(post.case_type || '') === 'documented_case'
+      ? 'KASUS NYATA — cek ulang detail pada sumber publik: '
+      : 'SIMULASI SITUASI LAPANGAN — bukan klaim kejadian nyata: ';
+    const caseNotes = caseLabel + String(post.case_or_field_scenario || '') +
+      (caseSource ? '\\nSumber kasus: ' + (caseSource.title || '') + '\\n' + caseSource.url : '');
 
     rows.push([
       slot.date, slot.day, slot.dailyCount + ' post/hari — slot ' + slot.postNumber + '/' + slot.dailyCount,
-      slot.time + ' WIB', slot.format, String(post.pillar || 'Education'), String(post.topic || ''),
+      slot.time + ' WIB', slot.format, String(post.pillar || 'Leadership in Practice'), String(post.topic || ''),
       String(post.hook || ''), String(post.production_plan || ''), String(post.caption || ''),
       String(post.cta || ''), tags,
       r1.title || '', r1.publisher || '', r1.publishedDate || '', r1.url || '', r1.summary || '',
       r2.title || '', r2.publisher || '', r2.publishedDate || '', r2.url || '', r2.summary || '',
       example.title, example.creator, example.platform, example.url, String(post.example_adaptation || example.lesson),
       String(post.original_angle || ''), String(post.fact_check_notes || ''),
-      'DRAFT — REVIEW BEFORE POSTING', now
+      'DRAFT — REVIEW BEFORE POSTING', now, caseNotes, formatCarouselSlides_(post, slot.format)
     ]);
   });
 
@@ -357,6 +365,78 @@ function repairGeminiJson_(endpoint, apiKey, invalidText, originalError) {
   }
 }
 
+function countWords_(text) {
+  const value = String(text || '').trim();
+  return value ? value.split(/\\s+/).filter(Boolean).length : 0;
+}
+
+function validateDraftPosts_(posts, slots, sourceMap, exampleMap) {
+  const errors = [];
+  slots.forEach(function (slot, index) {
+    const post = posts[index] || {};
+    const hook = String(post.hook || '').trim();
+    const hookWords = countWords_(hook);
+    const label = 'Post ' + (index + 1) + ' (' + slot.date + ' ' + slot.format + ')';
+    if (hookWords < 4 || hookWords > 9) errors.push(label + ': hook has ' + hookWords + ' words; required 4–9.');
+    if (!String(post.topic || '').trim()) errors.push(label + ': topic is empty.');
+    if (!String(post.case_or_field_scenario || '').trim()) errors.push(label + ': workplace case/scenario is empty.');
+    const refIds = Array.isArray(post.reference_ids) ? post.reference_ids : [];
+    if (!refIds.some(function (id) { return Boolean(sourceMap[String(id || '').trim()]); })) {
+      errors.push(label + ': no valid public research reference ID.');
+    }
+    const exampleId = String(post.example_id || '').trim();
+    if (!exampleMap[exampleId]) errors.push(label + ': missing or invalid example_id.');
+    const caseType = String(post.case_type || '').trim();
+    const caseSourceId = String(post.case_source_id || '').trim();
+    const caseSource = sourceMap[caseSourceId] || exampleMap[caseSourceId];
+    if (caseType !== 'documented_case' && caseType !== 'illustrative_scenario') {
+      errors.push(label + ': case_type must be documented_case or illustrative_scenario.');
+    }
+    if (caseType === 'documented_case' && !caseSource) {
+      errors.push(label + ': documented case requires a valid case_source_id; use illustrative_scenario otherwise.');
+    }
+    if (caseType === 'illustrative_scenario' && caseSourceId) {
+      errors.push(label + ': illustrative scenario must not claim a source-backed case_source_id.');
+    }
+    if (slot.format === 'Carousel') {
+      const slides = Array.isArray(post.carousel_slides) ? post.carousel_slides : [];
+      if (slides.length !== 7) {
+        errors.push(label + ': carousel must contain exactly 7 fully written slides.');
+      } else {
+        if (String(slides[0].role || '').toLowerCase() !== 'cover') errors.push(label + ': carousel slide 1 role must be cover.');
+        if (String(slides[6].role || '').toLowerCase() !== 'cta') errors.push(label + ': carousel slide 7 role must be CTA.');
+        slides.forEach(function (slide, slideIndex) {
+          if (!String(slide.slide_text || '').trim()) errors.push(label + ': slide ' + (slideIndex + 1) + ' has no final on-slide copy.');
+          if (!String(slide.visual_direction || '').trim()) errors.push(label + ': slide ' + (slideIndex + 1) + ' has no visual direction.');
+        });
+        if (String(slides[0].slide_text || '').trim() !== hook) {
+          errors.push(label + ': slide 1 copy must exactly match the 4–9-word hook.');
+        }
+      }
+    } else if (Array.isArray(post.carousel_slides) && post.carousel_slides.length) {
+      errors.push(label + ': non-Carousel post must have an empty carousel_slides array.');
+    }
+  });
+  if (errors.length) {
+    throw new Error('Draft validation stopped before any calendar rows were written.\\n' +
+      errors.slice(0, 12).join('\\n') +
+      (errors.length > 12 ? '\\n…and ' + (errors.length - 12) + ' more issue(s).' : '') +
+      '\\nRun the generator again; if it repeats, review Apps Script → Executions.');
+  }
+}
+
+function formatCarouselSlides_(post, format) {
+  if (format !== 'Carousel') return '';
+  const slides = Array.isArray(post.carousel_slides) ? post.carousel_slides : [];
+  return slides.map(function (slide, index) {
+    const number = Number(slide.slide_number) || (index + 1);
+    const role = String(slide.role || 'slide').replace(/_/g, ' ').toUpperCase();
+    return 'SLIDE ' + number + ' — ' + role + '\\n' +
+      String(slide.slide_text || '').trim() +
+      (slide.visual_direction ? '\\nArahan visual: ' + String(slide.visual_direction).trim() : '');
+  }).join('\\n\\n');
+}
+
 function collectReferences_() {
   const all = [], seen = {};
   CFG.QUERIES.forEach(function (query) {
@@ -374,9 +454,11 @@ function collectReferences_() {
         if (seen[key]) return;
         seen[key] = true;
         const source = item.getChild('source');
+        const publisher = source ? cleanText_(source.getText()) : publisherFromUrl_(link);
+        if (!isTrustedReference_(publisher, link, query)) return;
         all.push({
           title:title,url:link,
-          publisher:source ? cleanText_(source.getText()) : publisherFromUrl_(link),
+          publisher:publisher,
           publishedDate:parseRssDate_(xmlText_(item,'pubDate')),
           summary:cleanText_(xmlText_(item,'description')) || 'No short snippet supplied. Review the full linked article before making factual claims.',
           query:query
@@ -387,6 +469,16 @@ function collectReferences_() {
   });
   if (all.length < 8) throw new Error('Only ' + all.length + ' public articles were found. Stopped instead of inventing references. Try again later.');
   return all.slice(0,35);
+}
+
+function isTrustedReference_(publisher, url, query) {
+  const p = String(publisher || '').toLowerCase();
+  const u = String(url || '').toLowerCase();
+  const q = String(query || '').toLowerCase();
+  // LinkedIn is accepted only for searches explicitly targeting Arnold's public professional material.
+  if (/arnold priadi bolang|linkedin\\.com\\/posts\\/arnold-priadi-bolang/.test(q) &&
+      /linkedin|arnold priadi bolang/.test(p + ' ' + u)) return true;
+  return /harvard business review|hbr\\.org|gallup|mit sloan|sloan management review|center for creative leadership|\\bccl\\b|shrm|mckinsey|atlassian|american psychological association|\\bapa\\b|greater good|berkeley|cipd|chartered institute of personnel|ddi|google rework|deloitte|stanford|harvard business school|\\bhbs\\b|world economic forum|weforum|nature\\.com|frontiersin|pubmed|nih\\.gov|national institutes of health|sloanreview\\.mit\\.edu|rework\\.withgoogle\\.com/.test(p + ' ' + u);
 }
 
 function appendReferences_(sheet, refs) {
@@ -429,12 +521,22 @@ function ensureSheets_(ss) {
 function getSheetWithHeaders_(ss,name,headers) {
   let sheet = ss.getSheetByName(name);
   if (!sheet) sheet = ss.insertSheet(name);
+  if (sheet.getMaxColumns() < headers.length) {
+    sheet.insertColumnsAfter(sheet.getMaxColumns(), headers.length - sheet.getMaxColumns());
+  }
   const cell = sheet.getRange(1,1).getDisplayValue();
-  if (sheet.getLastRow()===0 || !cell) sheet.getRange(1,1,1,headers.length).setValues([headers]);
-  else {
+  if (sheet.getLastRow()===0 || !cell) {
+    sheet.getRange(1,1,1,headers.length).setValues([headers]);
+  } else {
     const current = sheet.getRange(1,1,1,headers.length).getDisplayValues()[0];
-    const missing = headers.filter(function (h) { return current.indexOf(h)<0; });
-    if (missing.length) throw new Error('Tab "'+name+'" has different headers. Use a new blank spreadsheet or rename that old tab; existing data will not be overwritten.');
+    for (let i = 0; i < headers.length; i++) {
+      if (current[i] === headers[i]) continue;
+      if (!current[i] && current.slice(i).every(function (value) { return !value; })) {
+        sheet.getRange(1,i+1).setValue(headers[i]);
+        continue;
+      }
+      throw new Error('Tab "'+name+'" has a different header at column '+(i+1)+'. Existing data was not overwritten. Check the header row or use a new blank spreadsheet.');
+    }
   }
   return sheet;
 }
@@ -446,7 +548,7 @@ function styleSheet_(sheet) {
   sheet.getRange(1,1,1,cols).setBackground('#07162f').setFontColor('#ffffff').setFontWeight('bold').setWrap(true).setVerticalAlignment('middle');
   if (sheet.getLastRow()>1) sheet.getRange(2,1,sheet.getLastRow()-1,cols).setWrap(true).setVerticalAlignment('top');
   const widths = {
-    'Content Calendar':[105,85,170,125,150,155,240,280,380,460,220,190,300,180,120,350,420,300,180,120,350,420,310,190,160,360,340,320,320,210,175],
+    'Content Calendar':[105,85,170,125,150,155,240,280,380,460,220,190,300,180,120,350,420,300,180,120,350,420,310,190,160,360,340,320,320,210,175,390,500],
     'Reference Library':[105,320,200,120,390,450,300,175],
     'Creator Examples':[110,340,230,190,420,280,420,175]
   };
