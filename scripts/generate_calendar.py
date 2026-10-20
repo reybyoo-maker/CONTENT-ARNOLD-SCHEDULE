@@ -5,6 +5,7 @@ import html
 import json
 import os
 import re
+import random
 import sys
 import time
 from datetime import date, datetime, timedelta, timezone
@@ -23,15 +24,8 @@ NEWS_RSS = "https://news.google.com/rss/search"
 CALENDAR_TAB = "Content Calendar"
 REFERENCE_TAB = "Reference Library"
 DAYS_ID = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu", "Minggu"]
-SCHEDULE = {
-    0: ("Reels", "19:00"),
-    1: ("Carousel", "12:15"),
-    2: ("Reels", "19:00"),
-    3: ("Carousel", "12:15"),
-    4: ("Reels", "19:00"),
-    5: ("Feed (single image)", "10:00"),
-    6: ("Carousel", "19:00"),
-}
+POSTING_TIMES = ["09:00", "12:15", "15:30", "18:45", "20:30"]
+POST_FORMATS = ["Reels", "Carousel", "Feed (single image)"]
 QUERIES = [
     "site:hbr.org leadership teams manager workplace when:365d",
     "site:gallup.com workplace manager employee engagement when:365d",
@@ -175,14 +169,27 @@ def fetch_references():
     return result[:38]
 
 def expected_dates(start):
+    """Create a stable, date-seeded 1-3 posts/day schedule to avoid duplicates on reruns."""
     values = []
     for i in range(7):
         d = start + timedelta(days=i)
-        fmt, tm = SCHEDULE[d.weekday()]
-        values.append({"date": d.isoformat(), "day": DAYS_ID[d.weekday()], "time_wib": tm, "format": fmt, "frequency": "1 post utama"})
+        rng = random.Random(int(d.strftime("%Y%m%d")))
+        count = rng.randint(1, 3)
+        selected_times = sorted(rng.sample(POSTING_TIMES, count))
+        selected_formats = rng.sample(POST_FORMATS, count)
+        for idx, (clock, fmt) in enumerate(zip(selected_times, selected_formats), start=1):
+            values.append({
+                "date": d.isoformat(),
+                "day": DAYS_ID[d.weekday()],
+                "time_wib": clock,
+                "format": fmt,
+                "posts_that_day": count,
+                "post_number": idx,
+                "frequency": f"{count} post per hari",
+            })
     return values
 
-def generate_posts(start, refs, examples):
+def generate_posts(schedule, refs, examples):
     key = os.environ.get("GEMINI_API_KEY", "").strip()
     if not key:
         raise RuntimeError("Missing GEMINI_API_KEY secret.")
@@ -206,7 +213,7 @@ FACT RULES: use only source IDs and URLs given in the input. Never invent articl
 testimonials, client stories, or first-person experiences for Arnold. Every post must cite at least one supplied reference ID.
 If source summaries are weak, use them only as topic inspiration and do not make specific factual claims. No generic empty
 "tips" lists: each post needs a real workplace scenario, a clear insight, and a practical takeaway. Avoid unsupported claims.
-Return valid JSON only: {"posts":[...]} with exactly 7 posts in date order. Each item needs:
+Return valid JSON only: {"posts":[...]} with exactly one post for each supplied schedule slot, in exact slot order. The total number of posts varies between 7 and 21 according to the schedule. Each item needs:
 topic, pillar, hook, production_plan, caption, cta, hashtags (3-5), reference_ids (1-2), example_id, example_adaptation, original_angle, fact_check_notes.
 Pillars allowed: Education, Point of View, Proof of Work, Personal Perspective.
 Reels production_plan: concise 25-40 sec beat sheet including hook, explanation, concrete example, takeaway, and shot direction.
@@ -216,15 +223,15 @@ Caption: Indonesian, 80-150 words, concrete first line, useful explanation, appl
 The source links are articles/reports for inspection, not necessarily Instagram posts. Do not describe them as Instagram posts.
 """.strip()
     prompt = {
-        "schedule": expected_dates(start),
+        "schedule": schedule,
         "available_public_sources": ref_payload,
         "public_creator_content_examples": example_payload,
         "strict_requirements": [
-            "Exactly 7 original post ideas, one per date, matching the dates in schedule.",
+            "Return exactly one original post per supplied schedule slot (7 to 21 posts total), in the exact supplied order.",
             "Reference IDs must be from the supplied list only; each post must cite 1-2 source IDs.",
             "Hooks short enough for cover design; avoid repetitive topics and formulations.",
             "Choose the best-fitting example_id from public_creator_content_examples for every post and briefly explain example_adaptation. Treat it as a format reference, never copy its words.",
-            "One post per day. These are drafts for human review, not instructions to auto-publish.",
+            "Each day has a predetermined randomized count of 1-3 posts, at distinct WIB times. Use the supplied schedule as fixed; do not alter date, time, or format. These are drafts for human review, not instructions to auto-publish.",
             "Do not invent or imply unverified stats or customer proof."
         ],
     }
@@ -232,7 +239,7 @@ The source links are articles/reports for inspection, not necessarily Instagram 
     resp = requests.post(url, headers={"Content-Type": "application/json", "x-goog-api-key": key},
         json={"systemInstruction": {"parts": [{"text": system}]},
               "contents": [{"role": "user", "parts": [{"text": json.dumps(prompt, ensure_ascii=False)}]}],
-              "generationConfig": {"temperature": 0.5, "responseMimeType": "application/json", "maxOutputTokens": 8500}},
+              "generationConfig": {"temperature": 0.5, "responseMimeType": "application/json", "maxOutputTokens": 20000}},
         timeout=150)
     if not resp.ok:
         raise RuntimeError(f"Gemini API HTTP {resp.status_code}: {resp.text[:1300]}")
@@ -252,8 +259,8 @@ The source links are articles/reports for inspection, not necessarily Instagram 
     except json.JSONDecodeError as exc:
         raise RuntimeError(f"Gemini response was not valid JSON: {raw[:1500]}") from exc
     posts = parsed.get("posts")
-    if not isinstance(posts, list) or len(posts) != 7:
-        raise RuntimeError("Gemini must return exactly 7 posts.")
+    if not isinstance(posts, list) or len(posts) != len(schedule):
+        raise RuntimeError(f"Gemini must return exactly {len(schedule)} posts to match the scheduled time slots; received {len(posts) if isinstance(posts, list) else 'invalid output'}.")
     return posts
 
 def sheet_service():
@@ -292,21 +299,28 @@ def ensure_header(service, sid, tab, headers):
     elif any(h not in values[0] for h in headers):
         raise RuntimeError(f"Tab {tab!r} has incompatible headers. Use a new blank spreadsheet or align its header row.")
 
-def known_dates(service, sid):
-    rows = values_get(service, sid, f"'{CALENDAR_TAB}'!A2:A")
+def known_slots(service, sid):
+    """Read previously planned date/time keys, rather than blocking the whole date."""
+    rows = values_get(service, sid, f"'{CALENDAR_TAB}'!A2:C")
     result = set()
     for row in rows:
-        if row:
-            v = str(row[0]).strip()
-            if re.fullmatch(r"\d{4}-\d{2}-\d{2}", v):
-                result.add(v)
-            else:
-                for fmt in ("%m/%d/%Y", "%d/%m/%Y", "%d %b %Y"):
-                    try:
-                        result.add(datetime.strptime(v, fmt).date().isoformat())
-                        break
-                    except ValueError:
-                        pass
+        if len(row) < 3 or not row[0] or not row[2]:
+            continue
+        value = str(row[0]).strip()
+        normalized_date = ""
+        if re.fullmatch(r"\d{4}-\d{2}-\d{2}", value):
+            normalized_date = value
+        else:
+            for fmt in ("%m/%d/%Y", "%d/%m/%Y", "%d %b %Y"):
+                try:
+                    normalized_date = datetime.strptime(value, fmt).date().isoformat()
+                    break
+                except ValueError:
+                    continue
+        time_match = re.search(r"(\d{1,2}:\d{2})", str(row[2]))
+        if normalized_date and time_match:
+            hour, minute = map(int, time_match.group(1).split(":"))
+            result.add(f"{normalized_date}|{hour:02d}:{minute:02d}")
     return result
 
 def known_urls(service, sid):
@@ -348,11 +362,16 @@ def main():
     missing_secrets = [name for name in required_secrets if not os.environ.get(name, "").strip()]
     if missing_secrets:
         raise RuntimeError("Missing GitHub Actions secrets: " + ", ".join(missing_secrets) + ". Add them in Settings > Secrets and variables > Actions before running.")
-    print(f"Researching posts for {start.isoformat()} through {(start + timedelta(days=6)).isoformat()} WIB.")
+    planned_slots = expected_dates(start)
+    daily_counts = {}
+    for slot in planned_slots:
+        daily_counts[slot["date"]] = slot["posts_that_day"]
+    print(f"Researching {len(planned_slots)} planned posts for {start.isoformat()} through {(start + timedelta(days=6)).isoformat()} WIB.")
+    print("Posting frequency by date: " + ", ".join(f"{d}={count}" for d, count in daily_counts.items()))
 
     refs = fetch_references()
     print(f"Found {len(refs)} public source references.")
-    posts = generate_posts(start, refs, CREATOR_EXAMPLES)
+    posts = generate_posts(planned_slots, refs, CREATOR_EXAMPLES)
     source_map = {f"R{i}": ref for i, ref in enumerate(refs[:38], 1)}
 
     service, sid = sheet_service()
@@ -360,13 +379,18 @@ def main():
     ensure_header(service, sid, CALENDAR_TAB, CAL_HEADERS)
     ensure_header(service, sid, REFERENCE_TAB, REF_HEADERS)
     ensure_header(service, sid, CREATOR_TAB, CREATOR_HEADERS)
-    present = known_dates(service, sid)
+    present = known_slots(service, sid)
     rows = []
     for offset, post in enumerate(posts):
         if not isinstance(post, dict):
             raise RuntimeError(f"Post {offset + 1} is not a JSON object.")
-        d = start + timedelta(days=offset)
-        fmt, clock = SCHEDULE[d.weekday()]
+        slot = planned_slots[offset]
+        d = date.fromisoformat(slot["date"])
+        fmt, clock = slot["format"], slot["time_wib"]
+        slot_key = f"{d.isoformat()}|{clock}"
+        if slot_key in present:
+            print(f"Skipping {slot_key}; that posting slot already exists.")
+            continue
         ids = post.get("reference_ids", [])
         if isinstance(ids, str):
             ids = [ids]
@@ -388,15 +412,13 @@ def main():
                 example = example_map["C6"]
             else:
                 example = example_map["C2"]
-        if d.isoformat() in present:
-            print(f"Skipping {d.isoformat()} because it already exists.")
-            continue
         tags = post.get("hashtags", [])
         if isinstance(tags, str):
             tags = tags.split()
         tags = [t if str(t).startswith("#") else "#" + str(t).lstrip("#") for t in tags[:5]]
         rows.append([
-            d.isoformat(), DAYS_ID[d.weekday()], f"{clock} WIB", "1 post utama", fmt,
+            d.isoformat(), DAYS_ID[d.weekday()], f"{clock} WIB",
+            f'{slot["posts_that_day"]} post/hari — slot {slot["post_number"]}/{slot["posts_that_day"]}', fmt,
             str(post.get("pillar", "Education")), str(post.get("topic", "")), str(post.get("hook", "")),
             str(post.get("production_plan", "")), str(post.get("caption", "")), str(post.get("cta", "")),
             " ".join(tags), r1.get("title", ""), r1.get("publisher", ""), r1.get("published_date", ""),
@@ -407,12 +429,13 @@ def main():
             str(post.get("fact_check_notes", "")),
             "DRAFT — REVIEW BEFORE POSTING", run_time
         ])
+        present.add(slot_key)
     if rows:
         service.spreadsheets().values().append(spreadsheetId=sid, range=f"'{CALENDAR_TAB}'!A1",
             valueInputOption="RAW", insertDataOption="INSERT_ROWS", body={"values": rows}).execute()
         print(f"Wrote {len(rows)} new calendar rows.")
     else:
-        print("All 7 dates already exist; no duplicate calendar rows added.")
+        print("All selected date/time slots already exist; no duplicate calendar rows added.")
 
     urls = known_urls(service, sid)
     ref_rows = []
