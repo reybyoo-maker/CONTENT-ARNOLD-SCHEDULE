@@ -1,0 +1,47 @@
+name: Weekly Arnold Content Planner
+
+on:
+  schedule:
+    # Wednesday 00:10 UTC = Wednesday 07:10 WIB
+    - cron: "10 0 * * 3"
+  workflow_dispatch:
+    inputs:
+      start_date:
+        description: "First publication date, YYYY-MM-DD. Use 2026-10-21 for the first run."
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: weekly-arnold-content-planner
+  cancel-in-progress: false
+
+jobs:
+  generate-content-calendar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      GOOGLE_SHEET_ID: ${{ secrets.GOOGLE_SHEET_ID }}
+      GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
+      START_DATE: ${{ github.event.inputs.start_date || '' }}
+      TZ: Asia/Jakarta
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements.txt
+
+      - name: Install dependencies
+        run: python -m pip install --upgrade pip && pip install -r requirements.txt
+
+      - name: Generate research-backed content calendar and write to Google Sheets
+        run: python scripts/generate_calendar.py
