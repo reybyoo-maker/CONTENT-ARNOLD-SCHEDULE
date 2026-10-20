@@ -1,6 +1,6 @@
 # Arnold Bolang — Content Planner (Google Sheets + Apps Script + Gemini)
 
-Automation ini sengaja disederhanakan. Script berjalan langsung dari Google Sheets. Yang diperlukan hanya **Gemini API key dari Google AI Studio** dan Apps Script yang terikat pada spreadsheet. Tidak perlu Service Account, Google Sheets API setup terpisah, GitHub Actions, server, atau instal aplikasi.
+Automation ini berjalan langsung dari Google Sheets. Yang diperlukan hanya **Gemini API key dari Google AI Studio** dan Apps Script yang terikat pada spreadsheet. Tidak perlu Service Account, Google Sheets API setup terpisah, GitHub Actions untuk menjalankan job, server, atau instal aplikasi.
 
 ## Fitur
 - Membuat **1–3 post per hari**, pada jam yang berbeda.
@@ -9,8 +9,8 @@ Automation ini sengaja disederhanakan. Script berjalan langsung dari Google Shee
 - Jumlah, jam, dan format per tanggal stabil ketika dijalankan ulang sehingga slot tidak berubah dan tidak terduplikasi.
 - Kalender awal dimulai 21 Oktober 2026.
 - Menghasilkan ide, hook, outline Reels/carousel, caption Bahasa Indonesia, CTA, hashtag, sumber riset publik, dan tautan contoh konten publik pihak lain.
-- Meneliti artikel/riset publik melalui Google News RSS dari penerbit profesional. Topik termasuk leadership, team performance, delegation, komunikasi, emotional intelligence, perilaku kerja, executive presence, dan produktivitas.
-- Menyimpan contoh konten terkurasi di tab Creator Examples untuk mempelajari format. Konten orang lain tidak disalin.
+- Mencari artikel/riset publik melalui Google News RSS dari penerbit profesional. Topik mencakup leadership, team performance, delegation, komunikasi, emotional intelligence, perilaku kerja, executive presence, dan produktivitas.
+- Menyimpan contoh konten terkurasi di tab Creator Examples untuk mempelajari format. Konten pihak lain tidak disalin.
 - Tidak mengarang URL, statistik, testimoni, atau pengalaman pribadi. Jika pencarian sumber gagal, proses berhenti dengan error alih-alih membuat referensi palsu.
 - Semua ide adalah draft berstatus **DRAFT — REVIEW BEFORE POSTING**. Script tidak memublikasikan ke Instagram.
 - Model default adalah **gemini-3.5-flash-lite**. Jika model tidak tersedia pada akunmu, ganti konstanta MODEL di Code.gs dengan model stabil yang tersedia di AI Studio.
@@ -34,11 +34,11 @@ Automation ini sengaja disederhanakan. Script berjalan langsung dari Google Shee
 ## Jadwal otomatis
 Setup membuat time-driven trigger setiap Rabu sekitar pukul **07.10 WIB**, lalu membuat kalender tujuh hari berikutnya. Trigger Apps Script berjalan dalam jendela waktu sekitar jam yang dipilih, tidak selalu tepat pada menit yang sama. Spreadsheet tidak perlu tetap terbuka.
 
-Repository ini hanya menyimpan salinan/source code dan dokumentasi. Eksekusi otomatis terjadi langsung dalam Apps Script milik akun Google yang memasang trigger.
+Repository ini hanya menyimpan salinan source code dan dokumentasi. Eksekusi otomatis terjadi langsung dalam Apps Script milik akun Google yang memasang trigger.
 
 ## Biaya dan batasan
 - Apps Script memakai kuota akun Google.
-- Gemini API memiliki kuota/rate limit dan ketentuan gratis atau berbayar yang dapat berubah. Pantau pemakaian di Google AI Studio.
+- Gemini API mempunyai kuota/rate limit dan ketentuan gratis atau berbayar yang dapat berubah. Pantau pemakaian di Google AI Studio.
 - Jangan bagikan API key atau menaruhnya dalam kode publik.
 - RSS memberi judul, publisher, tautan, dan cuplikan. Periksa sumber lengkap sebelum menerbitkan klaim faktual.
 - Gemini bisa salah memahami cuplikan, jadi baca ulang draft sebelum posting.
