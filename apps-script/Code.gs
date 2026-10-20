@@ -264,7 +264,7 @@ function generatePosts_(slots, refs) {
     'Return valid JSON only: {"posts":[...]} with exactly one post per supplied slot, in the same order. There can be 7–21 posts.',
     'Required post fields: topic, pillar, hook, production_plan, carousel_slides, caption, cta, hashtags (array of 3–5), reference_ids (array of 1–2 valid R IDs), example_id, example_format_match, example_adaptation, original_angle, case_type, case_or_field_scenario, case_source_id (R ID or AB ID for documented cases, otherwise empty string), fact_check_notes.',
     'The research reference should support factual claims. A first-party Arnold post may be selected as case_source_id when the post refers specifically to a public example from Arnold. Do not imply that an external creator’s post is evidence of Arnold’s experience.',
-    'Every schedule slot includes allowed_creator_examples filtered to the same format. Select example_id only from that list, and repeat its content format in the output field example_format_match.',
+    'Every schedule slot includes allowed_creator_examples filtered to the same format. Select example_id only from that list, and set example_format_match to the selected example’s exact format_match metadata.',
     'A Reels reference must open a video, a Carousel reference must explicitly be a carousel, and a Feed reference must be a single-image/static feed post. Do not substitute articles, profiles, or unverified-format posts.',
     'Source links are references to verify, not permission to copy. Create original explanations, examples, and slide sentences.'
   ].join('\n');
@@ -435,9 +435,8 @@ function validateDraftPosts_(posts, slots, sourceMap, exampleMap) {
     } else if (!exampleSupportsFormat_(chosenExample, slot.format)) {
       errors.push(label + ': example_id ' + exampleId + ' is not a verified reference for ' + slot.format + '.');
     }
-    if (String(post.example_format_match || '').trim() !== slot.format) {
-      // Format family labels are standardized for validation, not inferred from the chosen reference.
-      errors.push(label + ': example_format_match must exactly equal the planned slot format "' + slot.format + '".');
+    if (chosenExample && String(post.example_format_match || '').trim() !== String(chosenExample.formatMatch || '')) {
+      errors.push(label + ': example_format_match must match the selected example’s verified format metadata.');
     }
     const caseType = String(post.case_type || '').trim();
     const caseSourceId = String(post.case_source_id || '').trim();
