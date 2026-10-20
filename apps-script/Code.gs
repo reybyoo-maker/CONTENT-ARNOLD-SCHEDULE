@@ -550,6 +550,8 @@ function collectReferences_() {
       channel.getChildren('item').slice(0,10).forEach(function (item) {
         const title = xmlText_(item,'title'), link = xmlText_(item,'link');
         if (!title || !link) return;
+        // Never import the account owner's own profile/posts as research references.
+        if (/arnold\s+priadi\s+bolang|linkedin\.com\/(?:in|posts)\/arnold-priadi-bolang/i.test([title,link,query].join(' '))) return;
         const key = title.toLowerCase() + '|' + link;
         if (seen[key]) return;
         seen[key] = true;
