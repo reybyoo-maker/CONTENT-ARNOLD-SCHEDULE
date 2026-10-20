@@ -338,6 +338,18 @@ function validateBatchStructure_(posts, slots, refs) {
       errors.push(label + ': no valid research reference ID.');
     }
 
+    const caseType = String(post.case_type || '').trim();
+    const caseSourceId = String(post.case_source_id || '').trim();
+    if (caseType !== 'documented_case' && caseType !== 'illustrative_scenario') {
+      errors.push(label + ': case_type must be documented_case or illustrative_scenario.');
+    }
+    if (caseType === 'documented_case' && !sourceMap[caseSourceId]) {
+      errors.push(label + ': a documented case must point to an R research reference.');
+    }
+    if (caseType === 'illustrative_scenario' && caseSourceId) {
+      errors.push(label + ': an illustrative scenario must not claim a documented case source.');
+    }
+
     if (slot.format === 'Carousel') {
       const slides = Array.isArray(post.carousel_slides) ? post.carousel_slides : [];
       if (slides.length !== 7) {
