@@ -1,0 +1,48 @@
+name: Temporary external reference validation
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps-script/Code.gs'
+      - '.github/workflows/temp-external-reference-check.yml'
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Check syntax and external reference rules
+        shell: bash
+        run: |
+          cp apps-script/Code.gs /tmp/Code.js
+          node --check /tmp/Code.js
+          cat > /tmp/test-external.js <<'JS'
+          const fs = require('fs');
+          const vm = require('vm');
+          const src = fs.readFileSync('/tmp/Code.js', 'utf8');
+          const sandbox = {
+            Logger: { log: function () {} },
+            Utilities: { formatDate: function (date) { return date.toISOString().slice(0, 10); } }
+          };
+          vm.createContext(sandbox);
+          const testLines = [
+            "const badExamples = EXAMPLES.filter(e => /arnold/i.test([e.id,e.title,e.creator,e.url].join(' ')));",
+            "if (badExamples.length) throw new Error('Owner-related examples still exist: ' + badExamples.map(e=>e.id).join(','));",
+            "if (CFG.QUERIES.some(q => /arnold-priadi-bolang|arnold priadi bolang/i.test(q))) throw new Error('Owner-specific search query still exists');",
+            "const week = buildSchedule_('2026-10-21');",
+            "if (week.filter(s => s.format === 'Reels').length !== 1) throw new Error('Expected exactly one Reels in full week');",
+            "const formatCases = [['Reels','Reels / Video'],['Carousel','Carousel'],['Feed (single image)','Feed (single image)']];",
+            "formatCases.forEach(([format, match]) => { const e = EXAMPLES.find(x => x.formatMatch === match); if (!e || !exampleSupportsFormat_(e,format)) throw new Error('Format example missing: '+format); });",
+            "const slots = week.slice(0, 12);",
+            "let attempts = 0;",
+            "generatePostsBatch_ = function(batch) { attempts++; if (batch.length > 1 && attempts === 1) return batch.slice(0,batch.length-1).map(s=>({date:s.date})); return batch.map(s=>({date:s.date,format:s.format})); };",
+            "const posts = generatePosts_(slots, []);",
+            "if (posts.length !== slots.length) throw new Error('Batch fallback failed: '+posts.length+' of '+slots.length);",
+            "if (attempts < 5) throw new Error('Batch retry/fallback did not run as expected');",
+            "console.log(JSON.stringify({status:'PASS', externalExamples:EXAMPLES.length, weekSlots:week.length, weeklyReels:1, postsRecovered:posts.length, batchCalls:attempts}));"
+          ];
+          vm.runInContext(src + '\n' + testLines.join('\n'), sandbox);
+          JS
+          node /tmp/test-external.js
